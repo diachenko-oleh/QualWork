@@ -47,7 +47,7 @@ fun SearchMainPage(viewModel: MyViewModel, openSearchBarScreen: () -> Unit){
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Companion.CenterHorizontally,
             ) {
-                SearchButton(viewModel, openSearchBarScreen)
+                SearchButton(openSearchBarScreen)
             }
         }
     }
@@ -55,7 +55,7 @@ fun SearchMainPage(viewModel: MyViewModel, openSearchBarScreen: () -> Unit){
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchButton(viewModel: MyViewModel, openSearchBarScreen:() -> Unit) {
+fun SearchButton(openSearchBarScreen:() -> Unit) {
     QualWorkTheme {
         Column(
            modifier = Modifier

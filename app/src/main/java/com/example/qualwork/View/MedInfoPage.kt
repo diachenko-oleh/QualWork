@@ -1,14 +1,27 @@
 package com.example.qualwork.View
 
-import androidx.compose.foundation.background
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -17,19 +30,54 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.qualwork.Data.Model.Pharmacy
 import com.example.qualwork.View.theme.QualWorkTheme
+import com.example.qualwork.ViewModel.MedicineDetailUiState
+import com.example.qualwork.ViewModel.MyViewModel
+import com.example.qualwork.ViewModel.SortType
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedInfoPage(onBack: () -> Unit,name: String){
+fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String) {
+    val context = LocalContext.current
+    val uiState by viewModel.detailState.collectAsState()
+    val sortType by viewModel.sortType.collectAsState()
+    val detailState by viewModel.detailState.collectAsState()
+
+    // Запит дозволу на геолокацію
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        // Після відповіді користувача — завантажуємо дані
+        viewModel.load(medicineUrl, context)
+    }
+
+    LaunchedEffect(medicineUrl) {
+        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
     QualWorkTheme {
         Scaffold(
-            topBar ={
+            topBar = {
                 TopAppBar(
-                    title ={Text("Інформація про ${name}")},
+                    title = {
+                        Text(
+                            text = when (val state = detailState) {
+                                is MedicineDetailUiState.Success -> state.medicine.name
+                                is MedicineDetailUiState.Loading -> "Завантаження..."
+                                is MedicineDetailUiState.Error -> "Помилка"
+                            }
+                        )
+                    },
                     modifier = Modifier
                         .fillMaxWidth(),
                     navigationIcon = {
@@ -45,16 +93,258 @@ fun MedInfoPage(onBack: () -> Unit,name: String){
                 )
             }
         ) { padding ->
-            Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize(),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.Companion.CenterHorizontally,
-            ) {
-                Text("Інформація про ${name}")
-            }
+            when (val state = uiState) {
+                is MedicineDetailUiState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
 
+                is MedicineDetailUiState.Error -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                is MedicineDetailUiState.Success -> {
+                    val info = state.medicine
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        item {
+                            AsyncImage(
+                                model = info.imageUrl,
+                                contentDescription = info.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+
+                        item {
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = info.name,
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = info.manufacturer,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = info.minPrice,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                        item {
+                            RecommendationBlock(pharmacies = info.pharmacies)
+                        }
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = sortType == SortType.BY_DISTANCE,
+                                    onClick = { viewModel.setSortType(SortType.BY_DISTANCE) },
+                                    label = { Text("За відстанню") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilterChip(
+                                    selected = sortType == SortType.BY_PRICE,
+                                    onClick = { viewModel.setSortType(SortType.BY_PRICE) },
+                                    label = { Text("За ціною") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        item {
+                            Text(
+                                text = "Аптеки (${info.pharmacies.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                            HorizontalDivider()
+                        }
+
+                        items(info.pharmacies) { pharmacy ->
+                            PharmacyCard(pharmacy)
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
+    @Composable
+    fun PharmacyCard(pharmacy: Pharmacy) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = pharmacy.name,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = pharmacy.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = pharmacy.price,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = if (pharmacy.distanceKm > 0)
+                            "${"%.1f".format(pharmacy.distanceKm)} км"
+                        else
+                            "відстань невідома",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun RecommendationBlock(pharmacies: List<Pharmacy>) {
+        if (pharmacies.isEmpty()) return
+
+        val nearest = pharmacies.minByOrNull { it.distanceKm }
+        val cheapest = pharmacies.minByOrNull {
+            it.price.replace("[^\\d.]".toRegex(), "").toDoubleOrNull() ?: Double.MAX_VALUE
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = "Рекомендації",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                // Найближча аптека
+                nearest?.let {
+                    Text(
+                        text = "📍 Найближча аптека",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = it.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = it.address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = it.price,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "${"%.1f".format(it.distanceKm)} км від вас",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                // Показуємо розділювач тільки якщо це різні аптеки
+                if (nearest?.name != cheapest?.name) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Найдешевша аптека
+                    cheapest?.let {
+                        Text(
+                            text = "💰 Найвигідніша ціна",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = it.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = it.address,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = it.price,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "${"%.1f".format(it.distanceKm)} км від вас",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                } else {
+                    // Якщо та сама аптека — показуємо одне повідомлення
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "✅ Ця аптека є і найближчою і найвигіднішою!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+    }

@@ -1,30 +1,118 @@
 package com.example.qualwork.ViewModel
 
 import android.app.Application
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.qualwork.Data.Model.Medicine
+import com.example.qualwork.Data.Model.Pharmacy
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import com.example.qualwork.Data.Repository.DataScraper
+import com.example.qualwork.Data.Repository.LocationHelper
 
+sealed class MedicineSearchState {
+    object Idle : MedicineSearchState()
+    object Loading : MedicineSearchState()
+    data class Success(val medicines: List<Medicine>) : MedicineSearchState()
+    data class Error(val message: String) : MedicineSearchState()
+}
+sealed class MedicineDetailUiState {
+    object Loading : MedicineDetailUiState()
+    data class Success(val medicine: Medicine) : MedicineDetailUiState()
+    data class Error(val message: String) : MedicineDetailUiState()
+}
+enum class SortType {
+    BY_DISTANCE,
+    BY_PRICE
+}
 class MyViewModel(application: Application): AndroidViewModel(application) {
-     val words = listOf(
-         "корова",
-         "корабль",
-         "корень",
-         "кот",
-         "компьютер",
-         "книга",
-         "корова1",
-         "корабль1",
-         "корень1",
-         "кот1",
-         "компьютер1",
-         "книга1",
+    private val _searchState  = MutableStateFlow<MedicineSearchState>(MedicineSearchState.Idle)
+    val searchState: StateFlow<MedicineSearchState> = _searchState.asStateFlow()
+    fun search(query: String) {
+        if (query.isBlank()) return
 
-    )
+        android.util.Log.d("MedicineVM", "Пошук: $query")
 
-    private val _searchText = mutableStateOf("результат")
-    val searchText: State<String> = _searchText
-    fun updateText(newText: String) {
-        _searchText.value = newText
+        viewModelScope.launch {
+            _searchState.value = MedicineSearchState.Loading
+            _searchState.value = try {
+                val results = DataScraper.search(query)
+                if (results.isEmpty()) {
+                    MedicineSearchState.Error("Нічого не знайдено")
+                } else {
+                    MedicineSearchState.Success(results)
+                }
+            } catch (e: Exception) {
+                MedicineSearchState.Error("Помилка мережі: ${e.message}")
+            }
+        }
+    }
+
+    private val _detailState  = MutableStateFlow<MedicineDetailUiState>(MedicineDetailUiState.Loading)
+    val detailState: StateFlow<MedicineDetailUiState> = _detailState .asStateFlow()
+
+    private val _sortType = MutableStateFlow(SortType.BY_DISTANCE)
+    val sortType: StateFlow<SortType> = _sortType.asStateFlow()
+
+    // Зберігаємо оригінальний список аптек
+    private var allPharmacies: List<Pharmacy> = emptyList()
+    private var currentDetails: Medicine? = null
+
+    fun load(medicineUrl: String, context: Context) {
+        viewModelScope.launch {
+            _detailState .value = MedicineDetailUiState.Loading
+            _detailState .value = try {
+                val details = DataScraper.getMedicineInfo(medicineUrl)
+                val userLocation = LocationHelper.getUserLocation(context)
+
+                allPharmacies = if (userLocation != null) {
+                    val (userLat, userLon) = userLocation
+                    details.pharmacies.map { pharmacy ->
+                        pharmacy.copy(
+                            distanceKm = DataScraper.calculateDistance(
+                                userLat, userLon,
+                                pharmacy.latitude, pharmacy.longitude
+                            )
+                        )
+                    }
+                } else {
+                    details.pharmacies
+                }
+
+                currentDetails = details
+                MedicineDetailUiState.Success(
+                    details.copy(pharmacies = sortPharmacies(allPharmacies, _sortType.value))
+                )
+            } catch (e: Exception) {
+                MedicineDetailUiState.Error("Помилка: ${e.message}")
+            }
+        }
+    }
+
+    fun setSortType(sortType: SortType) {
+        _sortType.value = sortType
+        val details = currentDetails ?: return
+        _detailState.value = MedicineDetailUiState.Success(
+            details.copy(pharmacies = sortPharmacies(allPharmacies, sortType))
+        )
+    }
+
+    private fun sortPharmacies(pharmacies: List<Pharmacy>, sortType: SortType): List<Pharmacy> {
+        return when (sortType) {
+            SortType.BY_DISTANCE -> pharmacies.sortedBy { it.distanceKm }
+            SortType.BY_PRICE -> pharmacies.sortedBy {
+                it.price.replace("[^\\d.]".toRegex(), "").toDoubleOrNull() ?: Double.MAX_VALUE
+            }
+        }
+    }
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun updateQuery(query: String) {
+        _searchQuery.value = query
     }
 }
