@@ -29,7 +29,7 @@ fun SearchScreen() {
             composable(SearchTabNavigator.SearchMain.route) {
                 SearchMainPage(
                     viewModel,
-                    {navController.navigate(SearchTabNavigator.SearchBarScreen.route) }
+                    { navController.navigate(SearchTabNavigator.SearchBarScreen.route) }
                 )
             }
             composable(SearchTabNavigator.SearchBarScreen.route){

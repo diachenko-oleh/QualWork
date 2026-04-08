@@ -36,9 +36,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -47,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import coil.compose.AsyncImage
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import com.example.qualwork.Data.Model.Medicine
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
@@ -158,13 +154,6 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
                             if (similarMatches.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Нічого не знайдено",
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                    )
-                                    Text(
                                         text = "Можливо ви шукали це:",
                                         color = MaterialTheme.colorScheme.onBackground,
                                         modifier = Modifier.padding(8.dp)
@@ -198,7 +187,7 @@ fun MedicineCard(
         ),
         border = BorderStroke(
                 width = 1.dp,
-                color = com.example.qualwork.View.theme.lightGray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
         ),
     ) {
         Row(

@@ -51,24 +51,29 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-    private val _detailState  = MutableStateFlow<MedicineDetailUiState>(MedicineDetailUiState.Loading)
-    val detailState: StateFlow<MedicineDetailUiState> = _detailState .asStateFlow()
+    private val _medInfoState  = MutableStateFlow<MedicineDetailUiState>(MedicineDetailUiState.Loading)
+    val medInfoState: StateFlow<MedicineDetailUiState> = _medInfoState .asStateFlow()
 
     private val _sortType = MutableStateFlow(SortType.BY_DISTANCE)
     val sortType: StateFlow<SortType> = _sortType.asStateFlow()
 
     // Зберігаємо оригінальний список аптек
-    private var allPharmacies: List<Pharmacy> = emptyList()
+    private val _allPharmacies = MutableStateFlow<List<Pharmacy>>(emptyList())
+    val allPharmacies: StateFlow<List<Pharmacy>> = _allPharmacies.asStateFlow()
     private var currentDetails: Medicine? = null
 
     fun load(medicineUrl: String, context: Context) {
         viewModelScope.launch {
-            _detailState .value = MedicineDetailUiState.Loading
-            _detailState .value = try {
-                val details = DataScraper.getMedicineInfo(medicineUrl)
+            _medInfoState .value = MedicineDetailUiState.Loading
+            _medInfoState .value = try {
                 val userLocation = LocationHelper.getUserLocation(context)
+                val details = DataScraper.getMedicineInfo(
+                    medicineUrl = medicineUrl,
+                    userLat = userLocation?.first,
+                    userLon = userLocation?.second
+                )
 
-                allPharmacies = if (userLocation != null) {
+                _allPharmacies.value = if (userLocation != null) {
                     val (userLat, userLon) = userLocation
                     details.pharmacies.map { pharmacy ->
                         pharmacy.copy(
@@ -84,7 +89,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
 
                 currentDetails = details
                 MedicineDetailUiState.Success(
-                    details.copy(pharmacies = sortPharmacies(allPharmacies, _sortType.value))
+                    details.copy(pharmacies = sortPharmacies(_allPharmacies.value, _sortType.value))
                 )
             } catch (e: Exception) {
                 MedicineDetailUiState.Error("Помилка: ${e.message}")
@@ -95,11 +100,10 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
     fun setSortType(sortType: SortType) {
         _sortType.value = sortType
         val details = currentDetails ?: return
-        _detailState.value = MedicineDetailUiState.Success(
-            details.copy(pharmacies = sortPharmacies(allPharmacies, sortType))
+        _medInfoState.value = MedicineDetailUiState.Success(
+            details.copy(pharmacies = sortPharmacies(_allPharmacies.value, sortType))
         )
     }
-
     private fun sortPharmacies(pharmacies: List<Pharmacy>, sortType: SortType): List<Pharmacy> {
         return when (sortType) {
             SortType.BY_DISTANCE -> pharmacies.sortedBy { it.distanceKm }
@@ -109,9 +113,10 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
+
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
     fun updateQuery(query: String) {
         _searchQuery.value = query
     }

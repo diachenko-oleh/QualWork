@@ -1,5 +1,10 @@
 package com.example.qualwork.View
 
+import android.Manifest
+import android.content.Context
+import android.location.Geocoder
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,15 +21,36 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import com.example.qualwork.Data.Repository.LocationHelper
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MyViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchMainPage(viewModel: MyViewModel, openSearchBarScreen: () -> Unit){
+    var isPermissionGranted by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        isPermissionGranted = isGranted
+    }
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
     QualWorkTheme {
         Scaffold(
             topBar = {
@@ -48,11 +74,11 @@ fun SearchMainPage(viewModel: MyViewModel, openSearchBarScreen: () -> Unit){
                 horizontalAlignment = Alignment.Companion.CenterHorizontally,
             ) {
                 SearchButton(openSearchBarScreen)
+                LocationInfoText(isPermissionGranted = isPermissionGranted)
             }
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchButton(openSearchBarScreen:() -> Unit) {
@@ -75,4 +101,38 @@ fun SearchButton(openSearchBarScreen:() -> Unit) {
             ) {}
         }
     }
+}
+@Composable
+fun LocationInfoText(isPermissionGranted: Boolean) {
+    val context = LocalContext.current
+    var locationText by remember { mutableStateOf("Визначення локації...") }
+
+    LaunchedEffect(isPermissionGranted) {
+        if (!isPermissionGranted) return@LaunchedEffect
+        withContext(Dispatchers.IO) {
+
+            val location = LocationHelper.getUserLocation(context)
+            locationText = if (location != null) {
+                val (lat, lon) = location
+                // Отримуємо адресу через Geocoder
+                try {
+                    val geocoder = Geocoder(context, Locale("uk"))
+                    val addresses = geocoder.getFromLocation(lat, lon, 1)
+                    val address = addresses?.firstOrNull()
+                    val addressText = address?.getAddressLine(0) ?: "Адреса невідома"
+                    "📍 $addressText\n🌐 ${"%.6f".format(lat)}, ${"%.6f".format(lon)}"
+                } catch (e: Exception) {
+                    "🌐 ${"%.6f".format(lat)}, ${"%.6f".format(lon)}"
+                }
+            } else {
+                "Локацію не визначено"
+            }
+        }
+    }
+
+    Text(
+        text = locationText,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }

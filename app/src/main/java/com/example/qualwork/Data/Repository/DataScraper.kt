@@ -4,6 +4,10 @@ import com.example.qualwork.Data.Model.Medicine
 import com.example.qualwork.Data.Model.Pharmacy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import kotlin.math.pow
 
@@ -63,129 +67,17 @@ object DataScraper{
             .filter { (_, distance) -> distance <= MAX_DISTANCE }
             .map { (medicine, _) -> medicine }
     }
-
-    suspend fun getCityId(lat: Double, lon: Double): String? = withContext(Dispatchers.IO) {
-        try {
-            val url = "https://tabletki.ua/locateAddress"
-            val json = """{"latitude":$lat,"longitude":$lon}"""
-
-            val response = Jsoup.connect(url)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .header("Content-Type", "application/json")
-                .requestBody(json)
-                .ignoreContentType(true)
-                .post()
-                .body()
-                .text()
-
-            // Парсимо JSON відповідь
-            val jsonObject = org.json.JSONObject(response)
-            jsonObject.optString("cityId").takeIf { it.isNotEmpty() }
-        } catch (e: Exception) {
-            android.util.Log.e("SCRAPER", "getCityId error: ${e.message}")
-            null
-        }
-    }
-    suspend fun getPharmaciesByCity(skuId: String, cityId: String): List<Pharmacy> =
+    suspend fun getMedicineInfo(
+        medicineUrl: String,
+        userLat: Double? = null,
+        userLon: Double? = null
+    ): Medicine =
         withContext(Dispatchers.IO) {
-            try {
-                val url = "https://tabletki.ua/cards/addresses"
-                val json = """
-                {
-                    "searchFilter": [
-                        {
-                            "type": "PCV",
-                            "value": "$skuId",
-                            "index": 0,
-                            "items": [],
-                            "skuIds": [],
-                            "minCount": 0,
-                            "analogsOrSimilar": 0,
-                            "includeAnalog": false,
-                            "tradeNameId": "",
-                            "name": null
-                        }
-                    ],
-                    "additionalFilter": {
-                        "delivery": false,
-                        "deliveryServiceCode": 0,
-                        "pharmacies": [],
-                        "radius": null,
-                        "sortBy": 0,
-                        "inStock": false,
-                        "openNow": false,
-                        "works24h": false,
-                        "withGenerator": false,
-                        "fractionalOnly": false,
-                        "onlyWholeList": false,
-                        "isFavourite": false,
-                        "minQuantity": 0,
-                        "length": 0,
-                        "metroStations": [],
-                        "townSections": [],
-                        "customAddresses": [],
-                        "serialNumbers": [],
-                        "productPackaging": [],
-                        "analogs": false,
-                        "searchFilterItems": null
-                    },
-                    "skuId": $skuId,
-                    "tradeName": "",
-                    "type": 0,
-                    "cityId": "$cityId"
-                }
-            """.trimIndent()
-
-                val responseHtml = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                    .header("Content-Type", "application/json")
-                    .requestBody(json)
-                    .ignoreContentType(true)
-                    .post()
-                    .body()
-                    .text()
-
-                // Парсимо HTML відповідь
-                val doc = org.jsoup.Jsoup.parse(responseHtml)
-                doc.select("article.address-card").mapNotNull { card ->
-                    try {
-                        val headerBlock = card.select("div.address-card__header--block").first()
-                        val locationStr = headerBlock?.attr("data-location") ?: return@mapNotNull null
-                        val (lat, lng) = locationStr.split(",").map { it.toDouble() }
-
-                        val name = card.select("div.address-card__header--name span")
-                            .first()?.text() ?: return@mapNotNull null
-                        val address = card.select("div.address-card__header--address span").text()
-                        val price = card.select("input[type=hidden]").attr("data-price-min")
-
-                        Pharmacy(
-                            name = name,
-                            address = address,
-                            price = if (price.isNotEmpty()) "$price грн" else "Ціна недоступна",
-                            latitude = lat,
-                            longitude = lng
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SCRAPER", "getPharmacies error: ${e.message}")
-                emptyList()
-            }
-        }
-    private fun extractSkuId(medicineUrl: String): String {
-        return medicineUrl.trimEnd('/').split("/").last()
-    }
-    suspend fun getMedicineInfo(medicineUrl: String): Medicine =
-        withContext(Dispatchers.IO) {
-
-
             val detailDoc = Jsoup.connect(medicineUrl)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .timeout(10_000)
                 .get()
-            // Отримання інформації про препарат
+
             val name = detailDoc.select("h1").first()?.text() ?: ""
             val imageUrl = detailDoc.select("div.carousel-item.active img").attr("src")
             val manufacturer = detailDoc.select("div.card__category--info-additional div").text()
@@ -198,8 +90,18 @@ object DataScraper{
                 "Ціна недоступна"
             }
 
-            // Отримання інформації про аптеки
-            val pharmacyUrl = medicineUrl.trimEnd('/') + "/pharmacy/kyiv/"
+            // Формуємо URL аптек з координатами або fallback на Київ
+            val pharmacyUrl = if (userLat != null && userLon != null) {
+                val citySlug = LocationHelper.getCitySlug(userLat, userLon)
+                android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
+                medicineUrl.trimEnd('/') + "/pharmacy/$citySlug/"
+            } else {
+                medicineUrl.trimEnd('/') + "/pharmacy/kyiv/"
+            }
+
+            android.util.Log.d("SCRAPER", "pharmacyUrl: $pharmacyUrl")
+
+
             val pharmacyDoc = Jsoup.connect(pharmacyUrl)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .timeout(10_000)
@@ -234,8 +136,7 @@ object DataScraper{
                 minPrice = minPrice,
                 imageUrl = imageUrl,
                 pharmacies = pharmacies,
-                url = medicineUrl,
-                isExact = true
+                url = medicineUrl
             )
         }
 

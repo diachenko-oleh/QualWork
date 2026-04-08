@@ -64,13 +64,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("androidx.navigation:navigation-compose:2.7.6")
 
-    // Jsoup для скрапінгу
     implementation("org.jsoup:jsoup:1.17.2")
 
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // ViewModel + Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
@@ -79,4 +76,5 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
