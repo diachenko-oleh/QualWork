@@ -36,6 +36,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -48,12 +51,16 @@ import com.example.qualwork.Data.Model.Medicine
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
 import com.example.qualwork.ViewModel.MyViewModel
+import androidx.compose.material.icons.filled.FilterList
+
 @ExperimentalMaterial3Api
 @Composable
 fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBack: () -> Unit){
     QualWorkTheme {
         val query by viewModel.searchQuery.collectAsState()
         val searchState by viewModel.searchState.collectAsState()
+        var showFilters by remember { mutableStateOf(false) }
+        val filterState by viewModel.filterState.collectAsState()
 
         Scaffold(
             topBar = {
@@ -76,7 +83,10 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                     .padding(horizontal = 12.dp),
-                                textStyle = TextStyle(fontSize = 20.sp),
+                                textStyle = TextStyle(
+                                    fontSize = 20.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                ),
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(
                                     imeAction = ImeAction.Search
@@ -102,6 +112,15 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
 
                             )
 
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showFilters = true }) {
+                            Icon(
+                                imageVector = Icons.Default.FilterList,
+                                contentDescription = "Фільтри",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     },
                     navigationIcon = {
@@ -166,6 +185,16 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
                             }
                         }
                     }
+                }
+                if (showFilters) {
+                    FilterBottomSheet(
+                        filterState = filterState,
+                        onApply = { minPrice, maxPrice,maxPriceLimit, onlyAvailable ->
+                            viewModel.applyFilters(minPrice, maxPrice,maxPriceLimit, onlyAvailable)
+                            showFilters = false
+                        },
+                        onDismiss = { showFilters = false }
+                    )
                 }
             }
         }

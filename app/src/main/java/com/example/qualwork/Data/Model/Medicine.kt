@@ -7,6 +7,6 @@ data class Medicine(
     val url: String,
     val imageUrl: String = "",
     val isExact: Boolean = true,
-
+    val pharmacyCount: Int = 0,
     val pharmacies: List<Pharmacy> = emptyList()
 )

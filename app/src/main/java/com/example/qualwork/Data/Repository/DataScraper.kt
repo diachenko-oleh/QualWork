@@ -44,10 +44,11 @@ object DataScraper{
             .timeout(10_000)
             .get()
 
-        doc.select("div.card.card__category")
-            .map { card ->
+        doc.select("div.card.card__category").map { card ->
                 val name = card.select("div.card__category--info a span").text()
                 val distance = minDistance(name, query)
+                val parentDiv = card.closest("[data-ga-product-stores]") // <- додати
+                val pharmacyCount = parentDiv?.attr("data-ga-product-stores")?.toIntOrNull() ?: 0
                 Pair(
                     Medicine(
                         name = name,
@@ -55,6 +56,7 @@ object DataScraper{
                         minPrice = card.select("div.card__category--price").text(),
                         url = BASE_URL + card.select("div.card__category--info a").attr("href"),
                         imageUrl = card.select("div.card__category--img img").attr("src"),
+                        pharmacyCount = pharmacyCount,
                         isExact = distance == 0
                     ),
                     distance
