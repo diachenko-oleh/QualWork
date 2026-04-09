@@ -19,15 +19,16 @@ sealed class MedicineSearchState {
     data class Success(val medicines: List<Medicine>) : MedicineSearchState()
     data class Error(val message: String) : MedicineSearchState()
 }
-sealed class MedicineDetailUiState {
-    object Loading : MedicineDetailUiState()
-    data class Success(val medicine: Medicine) : MedicineDetailUiState()
-    data class Error(val message: String) : MedicineDetailUiState()
+sealed class MedicineInfoUiState {
+    object Loading : MedicineInfoUiState()
+    data class Success(val medicine: Medicine) : MedicineInfoUiState()
+    data class Error(val message: String) : MedicineInfoUiState()
 }
 enum class SortType {
     BY_DISTANCE,
     BY_PRICE
 }
+
 class MyViewModel(application: Application): AndroidViewModel(application) {
     private val _searchState  = MutableStateFlow<MedicineSearchState>(MedicineSearchState.Idle)
     val searchState: StateFlow<MedicineSearchState> = _searchState.asStateFlow()
@@ -51,20 +52,19 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
         }
     }
 
-    private val _medInfoState  = MutableStateFlow<MedicineDetailUiState>(MedicineDetailUiState.Loading)
-    val medInfoState: StateFlow<MedicineDetailUiState> = _medInfoState .asStateFlow()
+    private val _medInfoState  = MutableStateFlow<MedicineInfoUiState>(MedicineInfoUiState.Loading)
+    val medInfoState: StateFlow<MedicineInfoUiState> = _medInfoState .asStateFlow()
 
     private val _sortType = MutableStateFlow(SortType.BY_DISTANCE)
     val sortType: StateFlow<SortType> = _sortType.asStateFlow()
 
-    // Зберігаємо оригінальний список аптек
     private val _allPharmacies = MutableStateFlow<List<Pharmacy>>(emptyList())
     val allPharmacies: StateFlow<List<Pharmacy>> = _allPharmacies.asStateFlow()
     private var currentDetails: Medicine? = null
 
-    fun load(medicineUrl: String, context: Context) {
+    fun getAllPharmacies(medicineUrl: String, context: Context) {
         viewModelScope.launch {
-            _medInfoState .value = MedicineDetailUiState.Loading
+            _medInfoState .value = MedicineInfoUiState.Loading
             _medInfoState .value = try {
                 val userLocation = LocationHelper.getUserLocation(context)
                 val details = DataScraper.getMedicineInfo(
@@ -88,11 +88,11 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
                 }
 
                 currentDetails = details
-                MedicineDetailUiState.Success(
+                MedicineInfoUiState.Success(
                     details.copy(pharmacies = sortPharmacies(_allPharmacies.value, _sortType.value))
                 )
             } catch (e: Exception) {
-                MedicineDetailUiState.Error("Помилка: ${e.message}")
+                MedicineInfoUiState.Error("Помилка: ${e.message}")
             }
         }
     }
@@ -100,7 +100,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
     fun setSortType(sortType: SortType) {
         _sortType.value = sortType
         val details = currentDetails ?: return
-        _medInfoState.value = MedicineDetailUiState.Success(
+        _medInfoState.value = MedicineInfoUiState.Success(
             details.copy(pharmacies = sortPharmacies(_allPharmacies.value, sortType))
         )
     }

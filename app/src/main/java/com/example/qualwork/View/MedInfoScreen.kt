@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -28,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SelectableChipColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -45,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.qualwork.Data.Model.Pharmacy
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.MedicineDetailUiState
+import com.example.qualwork.ViewModel.MedicineInfoUiState
 import com.example.qualwork.ViewModel.MyViewModel
 import com.example.qualwork.ViewModel.SortType
 
@@ -62,7 +60,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            viewModel.load(medicineUrl, context)
+            viewModel.getAllPharmacies(medicineUrl, context)
         }
     }
     LaunchedEffect(medicineUrl) {
@@ -77,9 +75,9 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                         Text(
                             modifier = Modifier.padding(8.dp),
                             text = when (val state = medInfoState) {
-                                is MedicineDetailUiState.Success -> state.medicine.name
-                                is MedicineDetailUiState.Loading -> "Завантаження..."
-                                is MedicineDetailUiState.Error -> "Помилка"
+                                is MedicineInfoUiState.Success -> state.medicine.name
+                                is MedicineInfoUiState.Loading -> "Завантаження..."
+                                is MedicineInfoUiState.Error -> "Помилка"
                             }
                         )
                     },
@@ -99,7 +97,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
             }
         ) { padding ->
             when (val state = medInfoState) {
-                is MedicineDetailUiState.Loading -> {
+                is MedicineInfoUiState.Loading -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -110,7 +108,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                     }
                 }
 
-                is MedicineDetailUiState.Error -> {
+                is MedicineInfoUiState.Error -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -121,7 +119,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                     }
                 }
 
-                is MedicineDetailUiState.Success -> {
+                is MedicineInfoUiState.Success -> {
                     val info = state.medicine
                     LazyColumn(
                         modifier = Modifier

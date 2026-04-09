@@ -4,10 +4,6 @@ import com.example.qualwork.Data.Model.Medicine
 import com.example.qualwork.Data.Model.Pharmacy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 import kotlin.math.pow
 
