@@ -47,7 +47,7 @@ object DataScraper{
         doc.select("div.card.card__category").map { card ->
                 val name = card.select("div.card__category--info a span").text()
                 val distance = minDistance(name, query)
-                val parentDiv = card.closest("[data-ga-product-stores]") // <- додати
+                val parentDiv = card.closest("[data-ga-product-stores]")
                 val pharmacyCount = parentDiv?.attr("data-ga-product-stores")?.toIntOrNull() ?: 0
                 Pair(
                     Medicine(

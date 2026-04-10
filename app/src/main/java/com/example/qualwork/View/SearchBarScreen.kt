@@ -52,6 +52,13 @@ import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
 import com.example.qualwork.ViewModel.MyViewModel
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RangeSlider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.graphics.Color
+import com.example.qualwork.ViewModel.FilterState
 
 @ExperimentalMaterial3Api
 @Composable
@@ -249,6 +256,84 @@ fun MedicineCard(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterBottomSheet(
+    filterState: FilterState,
+    onApply: (minPrice: Float, maxPrice: Float,maxPriceLimit:Float, onlyAvailable: Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var minPrice by remember { mutableStateOf(filterState.minPrice) }
+    var maxPrice by remember { mutableStateOf(filterState.maxPrice) }
+    val maxPriceLimit = filterState.maxPriceLimit
+    var onlyAvailable by remember { mutableStateOf(filterState.onlyAvailable) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Фільтри",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Фільтр за ціною
+            Text(
+                text = "Ціна: ${minPrice.toInt()} — ${maxPrice.toInt()} грн",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            RangeSlider(
+                value = minPrice..maxPrice,
+                onValueChange = { range ->
+                    minPrice = range.start
+                    maxPrice = range.endInclusive
+                },
+                valueRange = 0f..maxPriceLimit,
+                colors = SliderDefaults.colors(
+                    inactiveTrackColor = com.example.qualwork.View.theme.lightGray,
+                )
+            )
+
+            // Фільтр за наявністю в аптеках
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onlyAvailable = !onlyAvailable },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Наявний в аптеках",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Checkbox(
+                    checked = onlyAvailable,
+                    onCheckedChange = { onlyAvailable = it }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { onApply(minPrice, maxPrice,maxPriceLimit, onlyAvailable) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Застосувати")
             }
         }
     }
