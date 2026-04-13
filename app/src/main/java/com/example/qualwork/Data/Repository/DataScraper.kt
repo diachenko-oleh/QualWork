@@ -7,6 +7,11 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import kotlin.math.pow
 
+enum class ELikyStatus {
+    AVAILABLE,
+    NOT_AVAILABLE,
+    NOT_FOUND
+}
 object DataScraper{
 
     private const val BASE_URL = "https://tabletki.ua"
@@ -138,7 +143,49 @@ object DataScraper{
             )
         }
 
+    suspend fun checkELiky(medicineName: String): ELikyStatus = withContext(Dispatchers.IO) {
+        try {
+            val searchQuery = medicineName
+                .split(" ").first()
+                .trim()
+                android.util.Log.d("ELIKY", "searchQuery: $searchQuery")
 
+            val url = "https://likicontrol.com.ua/пошук-ліків/?$searchQuery"
+                android.util.Log.d("ELIKY", "url: $url")
+
+            val doc = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .timeout(10_000)
+                .get()
+
+            val cards = doc.select("div.likiListItem")
+                android.util.Log.d("ELIKY", "Знайдено карток: ${cards.size}")
+
+            val matchingCards = cards.filter  { card ->
+                val cardName = card.select("h2, h3, strong").text().uppercase()
+                android.util.Log.d("ELIKY", "cardName: $cardName") // <- додай
+                cardName.contains(searchQuery.uppercase())
+            }
+                android.util.Log.d("ELIKY", "matchingCards count: ${matchingCards.size}")
+
+            val hasAnyDlLogo = matchingCards.any { card ->
+                val hasDl = card.select("div.dl_logo").isNotEmpty()
+                android.util.Log.d("ELIKY", "card: ${card.select("h2,h3,strong").text()} -> dl_logo: $hasDl")
+                hasDl
+            }
+
+            return@withContext if (matchingCards.isEmpty()) {
+                ELikyStatus.NOT_FOUND
+            } else if (hasAnyDlLogo) {
+                ELikyStatus.AVAILABLE
+            } else {
+                ELikyStatus.NOT_AVAILABLE
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ELIKY", "error: ${e.message}")
+            ELikyStatus.NOT_FOUND
+        }
+    }
     fun calculateDistance(
         lat1: Double, lon1: Double,
         lat2: Double, lon2: Double

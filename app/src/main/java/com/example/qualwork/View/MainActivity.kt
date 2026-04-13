@@ -1,18 +1,18 @@
 package com.example.qualwork.View
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import com.example.qualwork.View.Search.SearchScreen
 import com.example.qualwork.View.theme.QualWorkTheme
 
 class MainActivity : ComponentActivity() {
@@ -42,11 +43,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @PreviewScreenSizes
 @Composable
 fun QualWorkApp() {
-    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.SEARCH) }
+    var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.TREATMENT) }
     val itemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
             selectedIconColor = Color.Red,
@@ -79,13 +79,11 @@ fun QualWorkApp() {
             navigationBarContainerColor = MaterialTheme.colorScheme.background,
         )
     ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-            when (currentDestination) {
-                AppDestinations.SEARCH -> SearchScreen()
-                AppDestinations.HOME -> Greeting(name = "Android", Modifier.padding(padding))
-                AppDestinations.PROFILE -> TODO()
+        when (currentDestination) {
+            AppDestinations.SEARCH -> SearchScreen()
+            AppDestinations.TREATMENT -> TreatmentScreen()
+            AppDestinations.PROFILE -> TODO()
 
-            }
         }
     }
 }
@@ -94,15 +92,9 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    SEARCH("Search",Icons.Default.Search),
-    HOME("Home", Icons.Default.Home),
-    PROFILE("Profile", Icons.Default.AccountBox),;
+    SEARCH("Пошук",Icons.Default.Search),
+    TREATMENT("Курси лікування", Icons.Default.Medication),
+    PROFILE("Налаштування", Icons.Default.Settings),;
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+

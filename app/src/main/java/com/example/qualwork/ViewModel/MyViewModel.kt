@@ -118,6 +118,9 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
                     userLon = userLocation?.second
                 )
 
+                val eLikyStatus = DataScraper.checkELiky(details.name)
+                android.util.Log.d("ELIKY", "status: $eLikyStatus")
+
                 _allPharmacies.value = if (userLocation != null) {
                     val (userLat, userLon) = userLocation
                     details.pharmacies.map { pharmacy ->
@@ -134,7 +137,10 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
 
                 currentDetails = details
                 MedicineInfoUiState.Success(
-                    details.copy(pharmacies = sortPharmacies(_allPharmacies.value, _sortType.value))
+                    details.copy(
+                        pharmacies = sortPharmacies(_allPharmacies.value, _sortType.value),
+                        eLikyStatus = eLikyStatus
+                    )
                 )
             } catch (e: Exception) {
                 MedicineInfoUiState.Error("Помилка: ${e.message}")

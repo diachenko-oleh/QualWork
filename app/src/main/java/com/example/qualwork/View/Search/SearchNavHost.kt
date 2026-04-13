@@ -1,7 +1,6 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Search
 
 
-import android.R
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,7 +41,7 @@ fun SearchScreen() {
                         )
                         navController.navigate("medPage/$encodedUrl")
                     },
-                    onBack = {navController.navigateUp() }
+                    onBack = { navController.navigateUp() }
                 )
             }
 

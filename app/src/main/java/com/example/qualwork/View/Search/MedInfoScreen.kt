@@ -1,11 +1,13 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Search
 
 import android.Manifest
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -42,10 +45,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.qualwork.Data.Model.Pharmacy
+import com.example.qualwork.Data.Repository.ELikyStatus
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineInfoUiState
 import com.example.qualwork.ViewModel.MyViewModel
 import com.example.qualwork.ViewModel.SortType
+import androidx.core.net.toUri
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,11 +139,10 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                                 contentDescription = info.name,
                                 modifier = Modifier
                                     .padding(12.dp)
-                                    .fillMaxWidth()
-                                ,
+                                    .fillMaxWidth(),
                                 contentScale = ContentScale.FillWidth,
 
-                            )
+                                )
                         }
                         item {
                             Card(modifier = Modifier.fillMaxWidth()) {
@@ -166,7 +170,11 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                             }
                         }
                         item {
-                            RecommendationBlock(pharmacies = allPharmacies)
+                            RecommendationBlock(
+                                pharmacies = allPharmacies,
+                                eLikyStatus = state.medicine.eLikyStatus,
+                                medicineName = state.medicine.name
+                            )
                         }
                         item {
                             Row(
@@ -218,7 +226,11 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
     }
 }
 @Composable
-fun RecommendationBlock(pharmacies: List<Pharmacy>) {
+fun RecommendationBlock(
+    pharmacies: List<Pharmacy>,
+    eLikyStatus: ELikyStatus,
+    medicineName: String
+) {
     if (pharmacies.isEmpty()) return
 
     val nearest = pharmacies.minByOrNull { it.distanceKm }
@@ -316,6 +328,57 @@ fun RecommendationBlock(pharmacies: List<Pharmacy>) {
                     ),
                     color = MaterialTheme.colorScheme.onBackground
                 )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Text(
+                text = "Пільгова наявність",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            val context = LocalContext.current
+            when (eLikyStatus) {
+                ELikyStatus.AVAILABLE -> {
+                    Text(
+                        text = "Препарат можна отримати через програму \"Доступні ліки\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    TextButton(
+                        onClick = {
+                            val searchQuery = medicineName.split(" ", "-").first().trim()
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                "https://likicontrol.com.ua/пошук-ліків/?$searchQuery".toUri()
+                            )
+                            context.startActivity(intent)
+                        },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "Детальніше на likicontrol.com.ua...",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                ELikyStatus.NOT_AVAILABLE -> {
+                    Text(
+                        text = "Препарат не входить до програми \"Доступні ліки\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                ELikyStatus.NOT_FOUND -> {
+                    Text(
+                        text = "Інформація відсутня",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

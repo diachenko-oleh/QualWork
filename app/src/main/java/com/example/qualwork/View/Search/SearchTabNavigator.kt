@@ -1,4 +1,4 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Search
 
 sealed class SearchTabNavigator(val route: String) {
     object SearchMain : SearchTabNavigator("searchMain")

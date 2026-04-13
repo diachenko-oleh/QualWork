@@ -1,4 +1,4 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Search
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -57,7 +57,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.ui.graphics.Color
+import com.example.qualwork.View.theme.lightGray
 import com.example.qualwork.ViewModel.FilterState
 
 @ExperimentalMaterial3Api
@@ -287,7 +287,6 @@ fun FilterBottomSheet(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Фільтр за ціною
             Text(
                 text = "Ціна: ${minPrice.toInt()} — ${maxPrice.toInt()} грн",
                 style = MaterialTheme.typography.titleSmall
@@ -301,11 +300,10 @@ fun FilterBottomSheet(
                 },
                 valueRange = 0f..maxPriceLimit,
                 colors = SliderDefaults.colors(
-                    inactiveTrackColor = com.example.qualwork.View.theme.lightGray,
+                    inactiveTrackColor = lightGray,
                 )
             )
 
-            // Фільтр за наявністю в аптеках
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
