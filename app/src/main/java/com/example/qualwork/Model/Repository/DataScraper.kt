@@ -1,7 +1,7 @@
-package com.example.qualwork.Data.Repository
+package com.example.qualwork.Model.Repository
 
-import com.example.qualwork.Data.Model.Medicine
-import com.example.qualwork.Data.Model.Pharmacy
+import com.example.qualwork.Model.Entity.searchMedication
+import com.example.qualwork.Model.Entity.Pharmacy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
@@ -42,7 +42,7 @@ object DataScraper{
         }
     }   //порівняння подібності рядків
 
-    suspend fun search(query: String): List<Medicine> = withContext(Dispatchers.IO) {
+    suspend fun search(query: String): List<searchMedication> = withContext(Dispatchers.IO) {
         val url = "$BASE_URL/search/?q=${query.trim()}"
         val doc = Jsoup.connect(url)
             .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -55,7 +55,7 @@ object DataScraper{
                 val parentDiv = card.closest("[data-ga-product-stores]")
                 val pharmacyCount = parentDiv?.attr("data-ga-product-stores")?.toIntOrNull() ?: 0
                 Pair(
-                    Medicine(
+                    searchMedication(
                         name = name,
                         manufacturer = card.select("div.card__category--info-additional div").text(),
                         minPrice = card.select("div.card__category--price").text(),
@@ -74,7 +74,7 @@ object DataScraper{
         medicineUrl: String,
         userLat: Double? = null,
         userLon: Double? = null
-    ): Medicine =
+    ): searchMedication =
         withContext(Dispatchers.IO) {
             val detailDoc = Jsoup.connect(medicineUrl)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -133,7 +133,7 @@ object DataScraper{
                 }
             }
 
-            Medicine(
+            searchMedication(
                 name = name,
                 manufacturer = manufacturer,
                 minPrice = minPrice,
@@ -146,7 +146,8 @@ object DataScraper{
     suspend fun checkELiky(medicineName: String): ELikyStatus = withContext(Dispatchers.IO) {
         try {
             val searchQuery = medicineName
-                .split(" ").first()
+                .split(" ")
+                .first()
                 .trim()
                 android.util.Log.d("ELIKY", "searchQuery: $searchQuery")
 

@@ -1,4 +1,4 @@
-package com.example.qualwork.Data.Model
+package com.example.qualwork.Model.Entity
 
 data class Pharmacy(
     val name: String,

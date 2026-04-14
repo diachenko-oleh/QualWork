@@ -1,7 +1,6 @@
-package com.example.qualwork.Data.Repository
+package com.example.qualwork.Model.Repository
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
@@ -33,10 +32,10 @@ object LocationHelper {
                 .trim()
                 .replace(" ", "-")
 
-            android.util.Log.d("SCRAPER", "city slug: $city")
+                android.util.Log.d("SCRAPER", "city slug: $city")
             city.ifEmpty { "kyiv" }
         } catch (e: Exception) {
-            android.util.Log.e("SCRAPER", "getCitySlug error: ${e.message}")
+                android.util.Log.e("SCRAPER", "getCitySlug error: ${e.message}")
             "kyiv"
         }
     }

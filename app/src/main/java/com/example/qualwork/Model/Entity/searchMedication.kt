@@ -1,8 +1,8 @@
-package com.example.qualwork.Data.Model
+package com.example.qualwork.Model.Entity
 
-import com.example.qualwork.Data.Repository.ELikyStatus
+import com.example.qualwork.Model.Repository.ELikyStatus
 
-data class Medicine(
+data class searchMedication(
     val name: String,
     val manufacturer: String,
     val minPrice: String,

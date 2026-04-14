@@ -44,8 +44,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.qualwork.Data.Model.Pharmacy
-import com.example.qualwork.Data.Repository.ELikyStatus
+import com.example.qualwork.Model.Entity.Pharmacy
+import com.example.qualwork.Model.Repository.ELikyStatus
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineInfoUiState
 import com.example.qualwork.ViewModel.MyViewModel
@@ -80,7 +80,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                         Text(
                             modifier = Modifier.padding(8.dp),
                             text = when (val state = medInfoState) {
-                                is MedicineInfoUiState.Success -> state.medicine.name
+                                is MedicineInfoUiState.Success -> state.searchMedication.name
                                 is MedicineInfoUiState.Loading -> "Завантаження..."
                                 is MedicineInfoUiState.Error -> "Помилка"
                             }
@@ -125,7 +125,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                 }
 
                 is MedicineInfoUiState.Success -> {
-                    val info = state.medicine
+                    val info = state.searchMedication
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -172,8 +172,8 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                         item {
                             RecommendationBlock(
                                 pharmacies = allPharmacies,
-                                eLikyStatus = state.medicine.eLikyStatus,
-                                medicineName = state.medicine.name
+                                eLikyStatus = state.searchMedication.eLikyStatus,
+                                medicineName = state.searchMedication.name
                             )
                         }
                         item {

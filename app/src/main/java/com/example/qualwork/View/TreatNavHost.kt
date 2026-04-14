@@ -29,7 +29,9 @@ fun TreatmentScreen() {
                 TreatMainPage({navController.navigate(TreatTabNavigator.NewCourse.route)})
             }
             composable(TreatTabNavigator.NewCourse.route){
-                NewCourse()
+                NewCourse(
+                    onCourseAdded = { navController.popBackStack()}
+                )
             }
         }
     }

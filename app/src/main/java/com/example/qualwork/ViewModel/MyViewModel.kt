@@ -4,24 +4,24 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.qualwork.Data.Model.Medicine
-import com.example.qualwork.Data.Model.Pharmacy
+import com.example.qualwork.Model.Entity.searchMedication
+import com.example.qualwork.Model.Entity.Pharmacy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import com.example.qualwork.Data.Repository.DataScraper
-import com.example.qualwork.Data.Repository.LocationHelper
+import com.example.qualwork.Model.Repository.DataScraper
+import com.example.qualwork.Model.Repository.LocationHelper
 
 sealed class MedicineSearchState {
     object Idle : MedicineSearchState()
     object Loading : MedicineSearchState()
-    data class Success(val medicines: List<Medicine>) : MedicineSearchState()
+    data class Success(val searchMedications: List<searchMedication>) : MedicineSearchState()
     data class Error(val message: String) : MedicineSearchState()
 }
 sealed class MedicineInfoUiState {
     object Loading : MedicineInfoUiState()
-    data class Success(val medicine: Medicine) : MedicineInfoUiState()
+    data class Success(val searchMedication: searchMedication) : MedicineInfoUiState()
     data class Error(val message: String) : MedicineInfoUiState()
 }
 data class FilterState(
@@ -38,7 +38,7 @@ enum class SortType {
 class MyViewModel(application: Application): AndroidViewModel(application) {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
-    private var originalMedicines: List<Medicine> = emptyList() // Оригінальний список без фільтрів
+    private var originalSearchMedications: List<searchMedication> = emptyList() // Оригінальний список без фільтрів
 
     private val _searchState  = MutableStateFlow<MedicineSearchState>(MedicineSearchState.Idle)
     val searchState: StateFlow<MedicineSearchState> = _searchState.asStateFlow()
@@ -53,7 +53,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
             _filterState.value = FilterState()
             _searchState.value = try {
                 val results = DataScraper.search(query)
-                originalMedicines = results
+                originalSearchMedications = results
                 val maxPrice = results.maxOfOrNull { medicine ->
                     medicine.minPrice
                         .replace("[^\\d.]".toRegex(), "")
@@ -80,7 +80,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
     fun applyFilters(minPrice: Float, maxPrice: Float,maxPriceLimit:Float, onlyAvailable: Boolean) {
         _filterState.value = FilterState(minPrice, maxPrice,maxPriceLimit,  onlyAvailable)
 
-        val filtered = originalMedicines.filter { medicine ->
+        val filtered = originalSearchMedications.filter { medicine ->
             val price = medicine.minPrice
                 .replace("[^\\d.]".toRegex(), "")
                 .toFloatOrNull() ?: 0f
@@ -105,7 +105,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
 
     private val _allPharmacies = MutableStateFlow<List<Pharmacy>>(emptyList())
     val allPharmacies: StateFlow<List<Pharmacy>> = _allPharmacies.asStateFlow()
-    private var currentDetails: Medicine? = null
+    private var currentDetails: searchMedication? = null
 
     fun getAllPharmacies(medicineUrl: String, context: Context) {
         viewModelScope.launch {

@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.TextStyle
 import coil.compose.AsyncImage
 import androidx.compose.ui.text.input.ImeAction
-import com.example.qualwork.Data.Model.Medicine
+import com.example.qualwork.Model.Entity.searchMedication
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
 import com.example.qualwork.ViewModel.MyViewModel
@@ -62,7 +62,7 @@ import com.example.qualwork.ViewModel.FilterState
 
 @ExperimentalMaterial3Api
 @Composable
-fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBack: () -> Unit){
+fun SearchBarScreen(viewModel: MyViewModel, openMedInfo: (searchMedication) -> Unit, onBack: () -> Unit){
     QualWorkTheme {
         val query by viewModel.searchQuery.collectAsState()
         val searchState by viewModel.searchState.collectAsState()
@@ -168,8 +168,8 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
                         )
                     }
                     is MedicineSearchState.Success -> {
-                        val exactMatches = state.medicines.filter { it.isExact }
-                        val similarMatches = state.medicines.filter { !it.isExact }
+                        val exactMatches = state.searchMedications.filter { it.isExact }
+                        val similarMatches = state.searchMedications.filter { !it.isExact }
 
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
@@ -209,7 +209,7 @@ fun SearchBarScreen(viewModel: MyViewModel,openMedInfo: (Medicine) -> Unit,onBac
 }
 @Composable
 fun MedicineCard(
-    medicine: Medicine,
+    searchMedication: searchMedication,
     onClick: () -> Unit = {}
 ) {
     Card(
@@ -231,8 +231,8 @@ fun MedicineCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = medicine.imageUrl,
-                contentDescription = medicine.name,
+                model = searchMedication.imageUrl,
+                contentDescription = searchMedication.name,
                 modifier = Modifier
                     .size(150.dp)
                     .padding(end = 12.dp),
@@ -241,18 +241,18 @@ fun MedicineCard(
 
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = medicine.name,
+                    text = searchMedication.name,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = medicine.manufacturer,
+                    text = searchMedication.manufacturer,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = medicine.minPrice,
+                    text = searchMedication.minPrice,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
