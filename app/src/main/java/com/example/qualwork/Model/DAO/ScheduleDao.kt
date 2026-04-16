@@ -4,8 +4,10 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.qualwork.Model.Entity.Schedule
+import com.example.qualwork.Model.Relation.ScheduleWithLogs
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -29,4 +31,10 @@ interface ScheduleDao {
 
     @Delete
     suspend fun delete(schedule: Schedule)
+
+    @Query("""
+        SELECT * FROM schedules
+        WHERE userId = :userId
+    """)
+    suspend fun getByUser(userId: String): List<Schedule>
 }

@@ -34,11 +34,10 @@ enum class SortType {
     BY_DISTANCE,
     BY_PRICE
 }
-
 class MyViewModel(application: Application): AndroidViewModel(application) {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
-    private var originalSearchMedications: List<searchMedication> = emptyList() // Оригінальний список без фільтрів
+    private var originalSearchMedications: List<searchMedication> = emptyList()
 
     private val _searchState  = MutableStateFlow<MedicineSearchState>(MedicineSearchState.Idle)
     val searchState: StateFlow<MedicineSearchState> = _searchState.asStateFlow()
@@ -163,8 +162,6 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
             }
         }
     }
-
-
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()

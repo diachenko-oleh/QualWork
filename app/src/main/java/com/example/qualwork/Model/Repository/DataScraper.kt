@@ -13,7 +13,6 @@ enum class ELikyStatus {
     NOT_FOUND
 }
 object DataScraper{
-
     private const val BASE_URL = "https://tabletki.ua"
     private const val MAX_DISTANCE = 3
     private fun levenshtein(a: String, b: String): Int {

@@ -147,6 +147,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                         item {
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(12.dp)) {
+                                    android.util.Log.d("MED_INFO_CHECK", "manufacturer: ${info.manufacturer}")
                                     Text(
                                         text = info.name,
                                         style = MaterialTheme.typography.titleLarge,

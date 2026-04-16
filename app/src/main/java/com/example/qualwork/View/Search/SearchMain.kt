@@ -117,7 +117,7 @@ fun LocationInfoText(isPermissionGranted: Boolean) {
                     val addressText = address?.getAddressLine(0) ?: "Адреса невідома"
                     "📍 $addressText\n🌐 ${"%.6f".format(lat)}, ${"%.6f".format(lon)}"
                 } catch (e: Exception) {
-                    "🌐 ${"%.6f".format(lat)}, ${"%.6f".format(lon)}"
+                    "${"%.6f".format(lat)}, ${"%.6f".format(lon)}"
                 }
             } else {
                 "Локацію не визначено"

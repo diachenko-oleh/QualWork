@@ -1,4 +1,4 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Treatment
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.qualwork.Model.Entity.MedicationWithSchedules
+import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.AddCourseViewModel
 

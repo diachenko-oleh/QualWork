@@ -1,4 +1,5 @@
 package com.example.qualwork.Model.DAO
+
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -6,7 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.qualwork.Model.Entity.Medication
-import com.example.qualwork.Model.Entity.MedicationWithSchedules
+import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import kotlinx.coroutines.flow.Flow
 
 

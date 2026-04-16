@@ -5,7 +5,7 @@ import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.Entity.Medication
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
-import com.example.qualwork.Model.Entity.MedicationWithSchedules
+import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -20,7 +20,8 @@ class MedicationRepository @Inject constructor(
         endDate: Long?,
         startTime: String,
         intervalHours: Int,
-        dosage: Int
+        dosage: Int,
+        userId: String
     ) {
         val medicationId = medicationDao.insert(
             Medication(name = name, form = form)
@@ -33,7 +34,7 @@ class MedicationRepository @Inject constructor(
                 startTime = startTime,
                 intervalHours = intervalHours,
                 dosage = dosage,
-                userId = 0
+                userId = userId
             )
         )
     }

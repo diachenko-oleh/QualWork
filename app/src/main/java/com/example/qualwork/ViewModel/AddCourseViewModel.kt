@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.Entity.MedicationForm
-import com.example.qualwork.Model.Entity.MedicationWithSchedules
+import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Repository.MedicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,6 +21,9 @@ import javax.inject.Inject
 class AddCourseViewModel @Inject constructor(
     private val repository: MedicationRepository
 ) : ViewModel() {
+
+    // --- Крок 0: Користувач ---
+    val userId = "0000"
 
     // --- Крок 1: Препарат ---
     var medicationName by mutableStateOf("")
@@ -73,7 +76,8 @@ class AddCourseViewModel @Inject constructor(
                 endDate = endDate,
                 startTime = startTime,
                 intervalHours = intervalHours,
-                dosage = dosage
+                dosage = dosage,
+                userId = userId
             )
             isSaving = false
             savedSuccessfully = true

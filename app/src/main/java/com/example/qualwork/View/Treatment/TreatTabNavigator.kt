@@ -1,4 +1,4 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Treatment
 
 sealed class TreatTabNavigator(val route: String) {
     object TreatMain : TreatTabNavigator("treatmentMain")

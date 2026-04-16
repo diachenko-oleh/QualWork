@@ -1,4 +1,4 @@
-package com.example.qualwork.View
+package com.example.qualwork.View.Treatment
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

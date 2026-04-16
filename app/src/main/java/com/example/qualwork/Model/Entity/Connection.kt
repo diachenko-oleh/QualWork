@@ -6,31 +6,26 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
-    tableName = "schedules",
+    tableName = "connections",
     foreignKeys = [
-        ForeignKey(
-            entity = Medication::class,
-            parentColumns = ["id"],
-            childColumns = ["medicationId"],
-            onDelete = ForeignKey.CASCADE
-        ),
         ForeignKey(
             entity = User::class,
             parentColumns = ["id"],
             childColumns = ["userId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = User::class,
+            parentColumns = ["id"],
+            childColumns = ["supervisorId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("medicationId"), Index("userId")]
+    indices = [Index("userId"), Index("supervisorId")]
 )
-data class Schedule(
+data class Connection(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val medicationId: Long,
-    val startDate: Long,
-    val endDate: Long?,
-    val startTime: String,
-    val intervalHours: Int,
-    val dosage: Int,
-    val userId: String
+    val userId: Long,
+    val supervisorId: Long
 )

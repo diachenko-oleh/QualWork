@@ -1,22 +1,16 @@
 package com.example.qualwork.View
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -25,11 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import com.example.qualwork.View.Settings.SettingsScreen
 import com.example.qualwork.View.Search.SearchScreen
+import com.example.qualwork.View.Start.RootNavHost
+import com.example.qualwork.View.Treatment.TreatmentScreen
 import com.example.qualwork.View.theme.QualWorkTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -40,7 +36,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             QualWorkTheme {
-                QualWorkApp()
+                RootNavHost()
             }
         }
     }
@@ -84,7 +80,7 @@ fun QualWorkApp() {
         when (currentDestination) {
             AppDestinations.SEARCH -> SearchScreen()
             AppDestinations.TREATMENT -> TreatmentScreen()
-            AppDestinations.PROFILE -> TODO()
+            AppDestinations.PROFILE -> SettingsScreen()
 
         }
     }
