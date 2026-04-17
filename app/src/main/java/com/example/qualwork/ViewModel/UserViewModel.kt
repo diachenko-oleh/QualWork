@@ -34,10 +34,6 @@ class UserViewModel @Inject constructor(
 
     fun onNameChange(value: String) { nameInput = value }
     fun isNameValid() = nameInput.isNotBlank()
-
-    init {
-        //checkCurrentUser()
-    }
     var usersInDb by mutableStateOf<List<User>>(emptyList())
         private set
 
@@ -53,7 +49,6 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    // --- Перевірка при старті ---
     suspend fun checkUser(): SplashDestination {
         val savedId = userPreferences.currentUserId.first()
         val user = savedId?.let { userRepository.getById(it) }
@@ -64,8 +59,6 @@ class UserViewModel @Inject constructor(
             SplashDestination.CreateProfile
         }
     }
-
-    // --- Створення нового користувача ---
     fun createUser() {
         if (!isNameValid()) return
         viewModelScope.launch {

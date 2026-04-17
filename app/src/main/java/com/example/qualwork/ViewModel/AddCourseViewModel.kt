@@ -10,20 +10,29 @@ import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Repository.MedicationRepository
+import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AddCourseViewModel @Inject constructor(
-    private val repository: MedicationRepository
+    private val repository: MedicationRepository,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     // --- Крок 0: Користувач ---
-    val userId = "0000"
+    private var userId: String = ""
+
+    init {
+        viewModelScope.launch {
+            userId = userPreferences.currentUserId.first() ?: ""
+        }
+    }
 
     // --- Крок 1: Препарат ---
     var medicationName by mutableStateOf("")

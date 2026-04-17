@@ -60,7 +60,7 @@ fun CreateProfileScreen(
 
                 OutlinedTextField(
                     value = viewModel.nameInput,
-                    onValueChange = viewModel::onNameChange,
+                    onValueChange = { newValue -> viewModel.onNameChange(newValue) },
                     label = { Text("Ваше ім'я") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()

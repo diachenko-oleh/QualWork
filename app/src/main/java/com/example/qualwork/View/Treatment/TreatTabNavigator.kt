@@ -3,6 +3,6 @@ package com.example.qualwork.View.Treatment
 sealed class TreatTabNavigator(val route: String) {
     object TreatMain : TreatTabNavigator("treatmentMain")
     object NewCourse : TreatTabNavigator("newCourseScreen")
-    object TreatInfo : TreatTabNavigator("treatPage/{url}")
+    object TreatInfo : TreatTabNavigator("courseInfoScreen/{courseId}")
 
 }

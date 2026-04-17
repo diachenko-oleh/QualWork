@@ -7,8 +7,7 @@ import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 class UserRepository(
-    private val userDao: UserDao,
-   // private val userPreferences: UserPreferences
+    private val userDao: UserDao
 ) {
     suspend fun createUser(name: String): User {
         val user = User(
@@ -19,19 +18,13 @@ class UserRepository(
         userDao.insert(user)
         return user
     }
+
     suspend fun getById(id: String): User? = userDao.getById(id)
-
     suspend fun getByCode(code: String): User? = userDao.getByCode(code)
-
-    /*
-    suspend fun getCurrentUser(): User? {
-        val id = userPreferences.currentUserId.first()
-        return id?.let { userDao.getById(it) }
-    }
-    */
     suspend fun getAllUsers(): List<User> {
         return userDao.getAll()
     }
+
     private suspend fun generateUniqueCode(): String {
         var code = CodeGenerator.generate()
         while (userDao.getByCode(code) != null) {
@@ -50,7 +43,6 @@ class UserRepository(
 object IdGenerator {
     fun generateId(): String = UUID.randomUUID().toString()
 }
-
 object CodeGenerator {
     fun generate(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
