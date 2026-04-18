@@ -5,6 +5,7 @@ import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.DAO.UserDao
+import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.Repository.UserRepository
 import dagger.Module
@@ -47,4 +48,10 @@ object DatabaseModule {
         medicationDao: MedicationDao,
         scheduleDao: ScheduleDao
     ): MedicationRepository = MedicationRepository(medicationDao, scheduleDao)
+
+    @Provides
+    @Singleton
+    fun provideNotificationScheduler(
+        @ApplicationContext context: Context
+    ): NotificationScheduler = NotificationScheduler(context)
 }

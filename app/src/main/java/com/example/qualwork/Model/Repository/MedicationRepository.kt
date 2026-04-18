@@ -22,11 +22,11 @@ class MedicationRepository @Inject constructor(
         intervalHours: Int,
         dosage: Int,
         userId: String
-    ) {
+    ): Long {
         val medicationId = medicationDao.insert(
             Medication(name = name, form = form)
         )
-        scheduleDao.insert(
+        return scheduleDao.insert(
             Schedule(
                 medicationId = medicationId,
                 startDate = startDate,

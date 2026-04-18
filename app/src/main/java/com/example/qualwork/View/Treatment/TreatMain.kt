@@ -15,6 +15,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,22 +26,29 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.AddCourseViewModel
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -81,11 +91,16 @@ fun TreatMainPage(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                       items(courses) { item ->
+                        items(courses) { item ->
                            CourseCard(
                                medicationWithSchedules = item,
                                onClick = { onCourseClick(item.schedules.first().id) }
                            )
+                        }
+                        item {
+                            NotificationTestCard(
+                                scheduler = viewModel.getScheduler()
+                            )
                         }
                     }
                 }
@@ -197,7 +212,6 @@ fun CourseCard(
     }
 }
 
-// Допоміжний composable для пари "мітка + значення"
 @Composable
 private fun LabeledValue(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -211,4 +225,68 @@ private fun LabeledValue(label: String, value: String) {
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+@Composable
+fun NotificationTestCard(
+    scheduler: NotificationScheduler,
+    modifier: Modifier = Modifier
+) {
+    var delayMinutes by remember { mutableIntStateOf(1) }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = "Тест сповіщень",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Затримка: $delayMinutes хв",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Row {
+                    IconButton(onClick = { if (delayMinutes > 1) delayMinutes-- }) {
+                        Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Менше")
+                    }
+                    IconButton(onClick = { if (delayMinutes < 60) delayMinutes++ }) {
+                        Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Більше")
+                    }
+                }
+            }
+
+            // Кнопка із затримкою
+            OutlinedButton(
+                onClick = {
+                    scheduler.scheduleDelayed(
+                        delayMinutes = delayMinutes,
+                        medicationName = "Тестовий препарат",
+                        dosage = 1,
+                        unit = "таблетка"
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Відправити через $delayMinutes хв")
+            }
+        }
+    }
+}
+
+private fun getCurrentTime(): String {
+    val calendar = Calendar.getInstance()
+    val hours = calendar.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')
+    val minutes = calendar.get(Calendar.MINUTE).toString().padStart(2, '0')
+    return "$hours:$minutes"
 }

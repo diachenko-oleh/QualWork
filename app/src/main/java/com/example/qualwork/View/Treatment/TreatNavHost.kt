@@ -3,6 +3,7 @@ package com.example.qualwork.View.Treatment
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,9 +15,9 @@ import com.example.qualwork.ViewModel.MyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TreatmentScreen() {
+fun TreatmentScreen(navController: NavHostController) {
     QualWorkTheme {
-        val navController = rememberNavController()
+        //val navController = rememberNavController()
         val viewModel: MyViewModel = viewModel()
         NavHost(
             navController = navController,

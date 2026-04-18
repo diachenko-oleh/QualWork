@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.Entity.MedicationForm
+import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.UserPreferences
@@ -22,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AddCourseViewModel @Inject constructor(
     private val repository: MedicationRepository,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
 
     // --- Крок 0: Користувач ---
@@ -74,11 +76,10 @@ class AddCourseViewModel @Inject constructor(
     fun isStep2Valid() = dosage > 0
     fun isStep3Valid() = endDate == null || endDate!! > startDate
 
-    // --- Збереження ---
     fun saveCourse() {
         viewModelScope.launch {
             isSaving = true
-            repository.saveCourse(
+            val scheduleId = repository.saveCourse(
                 name = medicationName.trim(),
                 form = medicationForm,
                 startDate = startDate,
@@ -88,10 +89,22 @@ class AddCourseViewModel @Inject constructor(
                 dosage = dosage,
                 userId = userId
             )
+            notificationScheduler.scheduleNotifications(
+                scheduleId = scheduleId,
+                medicationName = medicationName.trim(),
+                dosage = dosage,
+                unit = medicationForm.unit,
+                startTime = startTime,
+                intervalHours = intervalHours,
+                startDate = startDate,
+                endDate = endDate
+            )
             isSaving = false
             savedSuccessfully = true
         }
     }
+
+    fun getScheduler(): NotificationScheduler = notificationScheduler
     val courses: StateFlow<List<MedicationWithSchedules>> =
         repository.getAllWithSchedules()
             .stateIn(

@@ -17,6 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,19 +46,26 @@ fun NewCourse(
     }
     QualWorkTheme {
         Scaffold(
-
+            topBar = {
+                TopAppBar(
+                    title = { Text("Новий курс лікування") },
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                )
+            }
         ) {padding->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(padding)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Новий курс лікування",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-
                 // Назва препарату
                 OutlinedTextField(
                     value = viewModel.medicationName,
@@ -104,7 +113,9 @@ fun NewCourse(
                 Button(
                     onClick = viewModel::saveCourse,
                     enabled = viewModel.isStep1Valid() && !viewModel.isSaving,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .size(50.dp)
                 ) {
                     if (viewModel.isSaving) {
                         CircularProgressIndicator(
@@ -113,7 +124,10 @@ fun NewCourse(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("Зберегти")
+                        Text(
+                            text = "Зберегти",
+                            style = MaterialTheme.typography.titleMedium
+                        )
                     }
                 }
             }

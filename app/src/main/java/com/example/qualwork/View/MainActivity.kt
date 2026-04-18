@@ -1,9 +1,13 @@
 package com.example.qualwork.View
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Search
@@ -12,8 +16,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.core.app.ActivityCompat
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.example.qualwork.View.Settings.SettingsScreen
 import com.example.qualwork.View.Search.SearchScreen
 import com.example.qualwork.View.Start.RootNavHost
@@ -31,7 +41,15 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            android.util.Log.d("Notifications", "Дозвіл відхилено")
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
+        android.util.Log.d("NOTIFY_TEST", "onCreate запущено")
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -39,12 +57,27 @@ class MainActivity : ComponentActivity() {
                 RootNavHost()
             }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val isGranted = ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!isGranted) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
     }
 }
 @PreviewScreenSizes
 @Composable
 fun QualWorkApp() {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.TREATMENT) }
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
     val itemColors = NavigationSuiteDefaults.itemColors(
         navigationBarItemColors = NavigationBarItemDefaults.colors(
             selectedIconColor = Color.Red,
@@ -75,11 +108,18 @@ fun QualWorkApp() {
         },
         navigationSuiteColors = NavigationSuiteDefaults.colors(
             navigationBarContainerColor = MaterialTheme.colorScheme.background,
-        )
+        ),
+        layoutType = if (currentRoute  == "newCourseScreen") {
+            NavigationSuiteType.None
+        } else {
+            NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
+                currentWindowAdaptiveInfo()
+            )
+        }
     ) {
         when (currentDestination) {
             AppDestinations.SEARCH -> SearchScreen()
-            AppDestinations.TREATMENT -> TreatmentScreen()
+            AppDestinations.TREATMENT -> TreatmentScreen(navController = navController)
             AppDestinations.PROFILE -> SettingsScreen()
 
         }
