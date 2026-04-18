@@ -89,7 +89,6 @@ fun TreatMainPage(
                         }
                     }
                 }
-                Text("treatMain")
             }
 
         }
@@ -127,7 +126,7 @@ fun CourseCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },  // ← додай
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     )  {
         Column(
@@ -142,58 +141,58 @@ fun CourseCard(
             ) {
                 Text(
                     text = medication.name,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.headlineSmall
                 )
                 Text(
                     text = medication.form.displayName,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            HorizontalDivider()
+           HorizontalDivider()
 
-            schedule?.let { s ->
-                // Дозування та інтервал
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    LabeledValue(
-                        label = "Дозування",
-                        value = "${s.dosage} ${medication.form.unit}"
-                    )
-                    LabeledValue(
-                        label = "Інтервал",
-                        value = intervalLabel(s.intervalHours)
-                    )
-                    LabeledValue(
-                        label = "Час прийому",
-                        value = s.startTime
-                    )
-                }
-
-                HorizontalDivider()
-
-                // Дати
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    LabeledValue(
-                        label = "Початок",
-                        value = formatDate(s.startDate)
-                    )
-                    LabeledValue(
-                        label = "Кінець",
-                        value = s.endDate?.let { formatDate(it) } ?: "Безстроково"
-                    )
-                    LabeledValue(
-                        label = "ID курсу",
-                        value = "${s.id}"
-                    )
-                }
-            }
+//            schedule?.let { s ->
+//                // Дозування та інтервал
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.SpaceBetween
+//                ) {
+//                    LabeledValue(
+//                        label = "Дозування",
+//                        value = "${s.dosage} ${medication.form.unit}"
+//                    )
+//                    LabeledValue(
+//                        label = "Інтервал",
+//                        value = intervalLabel(s.intervalHours)
+//                    )
+//                    LabeledValue(
+//                        label = "Час прийому",
+//                        value = s.startTime
+//                    )
+//                }
+//
+//                HorizontalDivider()
+//
+//                // Дати
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    horizontalArrangement = Arrangement.SpaceBetween
+//                ) {
+//                    LabeledValue(
+//                        label = "Початок",
+//                        value = formatDate(s.startDate)
+//                    )
+//                    LabeledValue(
+//                        label = "Кінець",
+//                        value = s.endDate?.let { formatDate(it) } ?: "Безстроково"
+//                    )
+//                    LabeledValue(
+//                        label = "ID курсу",
+//                        value = "${s.id}"
+//                    )
+//                }
+//            }
         }
     }
 }

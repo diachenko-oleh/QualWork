@@ -47,7 +47,7 @@ fun SettingsMainPage(
                         Text(
                             text="Налаштування",
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
+                            //textAlign = TextAlign.Center
                         )
                     },
                     modifier = Modifier
