@@ -49,7 +49,6 @@ class MainActivity : ComponentActivity() {
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
-        android.util.Log.d("NOTIFY_TEST", "onCreate запущено")
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {

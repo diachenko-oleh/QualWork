@@ -17,8 +17,6 @@ import com.example.qualwork.ViewModel.MyViewModel
 @Composable
 fun TreatmentScreen(navController: NavHostController) {
     QualWorkTheme {
-        //val navController = rememberNavController()
-        val viewModel: MyViewModel = viewModel()
         NavHost(
             navController = navController,
             startDestination = TreatTabNavigator.TreatMain.route,
@@ -30,8 +28,20 @@ fun TreatmentScreen(navController: NavHostController) {
                         navController.navigate("courseInfoScreen/$courseId")
                     })
             }
-            composable(TreatTabNavigator.NewCourse.route){
+            composable(
+                route = TreatTabNavigator.NewCourse.route,
+                arguments = listOf(
+                    navArgument("courseId") {
+                        type = NavType.LongType
+                        defaultValue = -1L
+                    }
+                )
+            ) { backStackEntry ->
+                val courseId = backStackEntry.arguments?.getLong("courseId")
+                    ?.takeIf { it != -1L }
                 NewCourse(
+                    courseId = courseId,
+                    onBackClick = { navController.popBackStack() },
                     onCourseAdded = { navController.popBackStack() }
                 )
             }

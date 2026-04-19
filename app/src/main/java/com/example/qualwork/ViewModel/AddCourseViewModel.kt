@@ -26,23 +26,21 @@ class AddCourseViewModel @Inject constructor(
     private val userPreferences: UserPreferences,
     private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
-
-    // --- Крок 0: Користувач ---
+    private var editingScheduleId: Long? = null
     private var userId: String = ""
-
     init {
         viewModelScope.launch {
             userId = userPreferences.currentUserId.first() ?: ""
         }
     }
 
-    // --- Крок 1: Препарат ---
+    //збереження препарату
     var medicationName by mutableStateOf("")
         private set
     var medicationForm by mutableStateOf(MedicationForm.TABLET)
         private set
 
-    // --- Крок 2: Графік ---
+    //збереження графіку/частоти
     var intervalHours by mutableIntStateOf(8)
         private set
     var startTime by mutableStateOf("08:00")
@@ -50,19 +48,18 @@ class AddCourseViewModel @Inject constructor(
     var dosage by mutableIntStateOf(1)
         private set
 
-    // --- Крок 3: Тривалість ---
+    //збереження тривалості
     var startDate by mutableLongStateOf(System.currentTimeMillis())
         private set
     var endDate by mutableStateOf<Long?>(null)
         private set
 
-    // --- UI стан ---
+
     var isSaving by mutableStateOf(false)
         private set
     var savedSuccessfully by mutableStateOf(false)
         private set
 
-    // --- Оновлення полів ---
     fun onNameChange(value: String) { medicationName = value }
     fun onFormChange(value: MedicationForm) { medicationForm = value }
     fun onIntervalChange(value: Int) { intervalHours = value }
@@ -71,7 +68,6 @@ class AddCourseViewModel @Inject constructor(
     fun onStartDateChange(value: Long) { startDate = value }
     fun onEndDateChange(value: Long?) { endDate = value }
 
-    // --- Валідація ---
     fun isStep1Valid() = medicationName.isNotBlank()
     fun isStep2Valid() = dosage > 0
     fun isStep3Valid() = endDate == null || endDate!! > startDate
