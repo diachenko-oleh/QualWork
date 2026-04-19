@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.example.qualwork.Model.Entity.Medication
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,8 @@ interface MedicationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(medication: Medication): Long
 
+    @Update
+    suspend fun update(medication: Medication)
     @Query("SELECT * FROM medications ORDER BY name ASC")
     fun getAll(): Flow<List<Medication>>
 

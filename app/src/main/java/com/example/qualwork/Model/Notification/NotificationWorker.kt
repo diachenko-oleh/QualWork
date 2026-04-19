@@ -65,6 +65,9 @@ class NotificationWorker @AssistedInject constructor(
             .setContentText("Дозування: $dosage $unit")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+           /* .addAction(0, "Прийняв", takeMed)
+            .addAction(0, "30 хв пізніше", wait)
+            .addAction(0, "Пропустити", skipMed)*/
             .build()
 
         NotificationManagerCompat.from(context).notify(medicationName.hashCode(), notification)

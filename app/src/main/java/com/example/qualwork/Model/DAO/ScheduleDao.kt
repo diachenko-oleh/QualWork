@@ -29,6 +29,9 @@ interface ScheduleDao {
     @Update
     suspend fun update(schedule: Schedule)
 
+    @Query("SELECT * FROM schedules WHERE id = :id")
+    suspend fun getById(id: Long): Schedule?
+
     @Delete
     suspend fun delete(schedule: Schedule)
 

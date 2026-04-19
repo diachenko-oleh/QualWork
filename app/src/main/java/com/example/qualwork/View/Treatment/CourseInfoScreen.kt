@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,9 +24,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,10 +44,12 @@ import com.example.qualwork.ViewModel.AddCourseViewModel
 fun CourseInfoScreen(
     courseId: Long,
     onBackClick: () -> Unit,
+    onEditClick: (Long) -> Unit,
     viewModel: AddCourseViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -52,7 +62,24 @@ fun CourseInfoScreen(
                             contentDescription = "Назад"
                         )
                     }
-                }
+                },
+                actions = {
+                    IconButton(onClick = { onEditClick(courseId) }) {
+                        Icon(Icons.Rounded.Edit, contentDescription = "Редагувати")
+                    }
+                    IconButton(onClick = { showDeleteDialog = true }) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = "Видалити"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
             )
         }
     ) { padding ->
@@ -133,6 +160,33 @@ fun CourseInfoScreen(
                         schedule.endDate?.let { formatDate(it) } ?: "Безстроково"
                     )
                 }
+            }
+
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Видалити курс?") },
+                    text = { Text("Курс лікування та всі пов'язані дані будуть видалені безповоротно.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.deleteCourse(courseId)
+                                showDeleteDialog = false
+                                onBackClick()
+                            }
+                        ) {
+                            Text(
+                                text = "Видалити",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Скасувати")
+                        }
+                    }
+                )
             }
         }
     }

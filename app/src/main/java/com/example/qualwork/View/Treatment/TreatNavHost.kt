@@ -52,9 +52,11 @@ fun TreatmentScreen(navController: NavHostController) {
                 val courseId = backStackEntry.arguments?.getLong("courseId") ?: 0L
                 CourseInfoScreen(
                     courseId = courseId,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onEditClick = { medicationId ->
+                        navController.navigate(TreatTabNavigator.NewCourse.createRoute(medicationId))
+                    }
                 )
-
             }
         }
     }

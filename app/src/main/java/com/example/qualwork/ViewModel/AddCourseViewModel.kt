@@ -27,6 +27,41 @@ class AddCourseViewModel @Inject constructor(
     private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
     private var editingScheduleId: Long? = null
+
+    fun loadCourse(courseId: Long) {
+        viewModelScope.launch {
+            val courseData = repository.getAllWithSchedules().first()
+                .find { it.schedules.any { s -> s.id == courseId } }
+                ?: return@launch
+
+            val medication = courseData.medication
+            val schedule = courseData.schedules.first()
+
+            editingScheduleId = schedule.id
+            medicationName = medication.name
+            medicationForm = medication.form
+            intervalHours = schedule.intervalHours
+            startTime = schedule.startTime
+            dosage = schedule.dosage
+            startDate = schedule.startDate
+            endDate = schedule.endDate
+        }
+    }
+
+    var deletedSuccessfully by mutableStateOf(false)
+        private set
+
+    fun deleteCourse(scheduleId: Long) {
+        viewModelScope.launch {
+            try {
+                notificationScheduler.cancelNotifications(scheduleId)
+                repository.deleteCourse(scheduleId)
+                deletedSuccessfully = true
+            } catch (e: Exception) {
+                android.util.Log.e("AddCourse", "Помилка видалення: ${e.message}")
+            }
+        }
+    }
     private var userId: String = ""
     init {
         viewModelScope.launch {
@@ -75,28 +110,48 @@ class AddCourseViewModel @Inject constructor(
     fun saveCourse() {
         viewModelScope.launch {
             isSaving = true
-            val scheduleId = repository.saveCourse(
-                name = medicationName.trim(),
-                form = medicationForm,
-                startDate = startDate,
-                endDate = endDate,
-                startTime = startTime,
-                intervalHours = intervalHours,
-                dosage = dosage,
-                userId = userId
-            )
-            notificationScheduler.scheduleNotifications(
-                scheduleId = scheduleId,
-                medicationName = medicationName.trim(),
-                dosage = dosage,
-                unit = medicationForm.unit,
-                startTime = startTime,
-                intervalHours = intervalHours,
-                startDate = startDate,
-                endDate = endDate
-            )
-            isSaving = false
-            savedSuccessfully = true
+            try {
+                val scheduleId = if (editingScheduleId == null) {
+                    repository.saveCourse(
+                        name = medicationName.trim(),
+                        form = medicationForm,
+                        startDate = startDate,
+                        endDate = endDate,
+                        startTime = startTime,
+                        intervalHours = intervalHours,
+                        dosage = dosage,
+                        userId = userId
+                    )
+                } else {
+                    repository.updateCourse(
+                        scheduleId = editingScheduleId!!,
+                        name = medicationName.trim(),
+                        form = medicationForm,
+                        startDate = startDate,
+                        endDate = endDate,
+                        startTime = startTime,
+                        intervalHours = intervalHours,
+                        dosage = dosage
+                    )
+                    editingScheduleId!!
+                }
+
+                notificationScheduler.scheduleNotifications(
+                    scheduleId = scheduleId,
+                    medicationName = medicationName.trim(),
+                    dosage = dosage,
+                    unit = medicationForm.unit,
+                    startTime = startTime,
+                    intervalHours = intervalHours,
+                    startDate = startDate,
+                    endDate = endDate
+                )
+                savedSuccessfully = true
+            } catch (e: Exception) {
+                android.util.Log.e("AddCourse", "Помилка: ${e.message}")
+            } finally {
+                isSaving = false
+            }
         }
     }
 

@@ -78,6 +78,9 @@ fun NewCourse(
     LaunchedEffect(viewModel.savedSuccessfully) {
         if (viewModel.savedSuccessfully) onCourseAdded()
     }
+    LaunchedEffect(courseId) {
+        courseId?.let { viewModel.loadCourse(it) }
+    }
     QualWorkTheme {
         Scaffold(
             topBar = {

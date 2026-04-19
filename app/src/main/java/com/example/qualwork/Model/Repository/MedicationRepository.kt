@@ -39,6 +39,38 @@ class MedicationRepository @Inject constructor(
         )
     }
 
+    suspend fun updateCourse(
+        scheduleId: Long,
+        name: String,
+        form: MedicationForm,
+        startDate: Long,
+        endDate: Long?,
+        startTime: String,
+        intervalHours: Int,
+        dosage: Int
+    ) {
+        val schedule = scheduleDao.getById(scheduleId) ?: return
+        medicationDao.update(
+            Medication(
+                id = schedule.medicationId,
+                name = name,
+                form = form
+            )
+        )
+        scheduleDao.update(
+            schedule.copy(
+                startDate = startDate,
+                endDate = endDate,
+                startTime = startTime,
+                intervalHours = intervalHours,
+                dosage = dosage
+            )
+        )
+    }
+    suspend fun deleteCourse(scheduleId: Long) {
+        val schedule = scheduleDao.getById(scheduleId) ?: return
+        medicationDao.delete(Medication(id = schedule.medicationId, name = "", form = MedicationForm.TABLET))
+    }
     fun getAllWithSchedules(): Flow<List<MedicationWithSchedules>> =
         medicationDao.getAllWithSchedules()
 
