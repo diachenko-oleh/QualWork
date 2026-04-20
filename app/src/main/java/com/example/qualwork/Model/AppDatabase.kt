@@ -20,7 +20,7 @@ import com.example.qualwork.Model.Relation.Converters
 @TypeConverters(Converters::class)
 @Database(
     entities = [Medication::class, Schedule::class, User::class, Connection::class, IntakeLog::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

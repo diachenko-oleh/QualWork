@@ -47,13 +47,11 @@ interface IntakeLogDao {
 
 
     // Logs for specific schedule
-    @Query("""
-        SELECT * FROM intake_logs 
-        WHERE scheduleId = :scheduleId 
-        ORDER BY intakeTime DESC
-    """)
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY doseTime DESC")
     fun getBySchedule(scheduleId: Long): Flow<List<IntakeLog>>
 
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND doseTime = :doseTime LIMIT 1")
+    suspend fun getByScheduleAndDoseTime(scheduleId: Long, doseTime: Long): IntakeLog?
 
     // Logs in time range (дуже корисно для календаря/статистики)
     @Query("""

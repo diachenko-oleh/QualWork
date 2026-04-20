@@ -8,5 +8,7 @@ sealed class TreatTabNavigator(val route: String) {
             else "newCourseScreen"
     }
     object TreatInfo : TreatTabNavigator("courseInfoScreen/{courseId}")
-
+    object Intake : TreatTabNavigator("intakeScreen/{scheduleId}") {
+        fun createRoute(scheduleId: Long) = "intakeScreen/$scheduleId"
+    }
 }

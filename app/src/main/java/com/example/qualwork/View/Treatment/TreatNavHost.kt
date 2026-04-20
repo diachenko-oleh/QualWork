@@ -55,7 +55,22 @@ fun TreatmentScreen(navController: NavHostController) {
                     onBackClick = { navController.popBackStack() },
                     onEditClick = { medicationId ->
                         navController.navigate(TreatTabNavigator.NewCourse.createRoute(medicationId))
+                    },
+                    onIntakeClick = { scheduleId ->
+                        navController.navigate(TreatTabNavigator.Intake.createRoute(scheduleId))
                     }
+                )
+            }
+            composable(
+                route = TreatTabNavigator.Intake.route,
+                arguments = listOf(
+                    navArgument("scheduleId") { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
+                IntakeScreen(
+                    scheduleId = scheduleId,
+                    onActionCompleted = { navController.popBackStack() }
                 )
             }
         }

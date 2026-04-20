@@ -23,5 +23,6 @@ data class IntakeLog(
     val scheduleId: Long,
     val intakeTime: Long,
     val doseTime: Long,
+    val intakeDate: String,
     val taken: Boolean
 )

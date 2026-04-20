@@ -21,11 +21,17 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -69,6 +75,9 @@ fun SettingsMainPage(
 
                 ProfileCard(onProfileClick)
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                VolumeSlider()
                 //HorizontalDivider()
                 //UsersDebugPanel()
             }
@@ -164,4 +173,35 @@ fun UsersDebugPanel(
             Text("Refresh")
         }
     }
+}
+
+@Composable
+fun VolumeSlider(){
+    var volume by remember { mutableFloatStateOf(0.5f) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+
+        ) {
+            Text(
+                text="Гучність сповіщень",
+                modifier = Modifier
+                    .padding(4.dp)
+            )
+
+            Slider(
+                value = volume,
+                onValueChange = { volume = it },
+                valueRange = 0f..1f
+            )
+        }
+
+    }
+
 }

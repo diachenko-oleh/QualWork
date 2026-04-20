@@ -10,11 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +45,7 @@ fun CourseInfoScreen(
     courseId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit,
+    onIntakeClick: (Long) -> Unit,
     viewModel: AddCourseViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
@@ -187,6 +188,12 @@ fun CourseInfoScreen(
                         }
                     }
                 )
+            }
+            Button(
+                onClick = { onIntakeClick(schedule.id) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Записати прийом")
             }
         }
     }
