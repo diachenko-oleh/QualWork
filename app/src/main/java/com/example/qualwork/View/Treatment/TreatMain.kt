@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
+import com.example.qualwork.ViewModel.CourseInfoViewModel
 import com.example.qualwork.ViewModel.CourseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,8 +54,12 @@ import com.example.qualwork.ViewModel.CourseViewModel
 fun TreatMainPage(
     onAddCourseClick: () -> Unit,
     onCourseClick: (Long) -> Unit,
-    viewModel: CourseViewModel = hiltViewModel()){
+    viewModel: CourseViewModel = hiltViewModel(),
+    courseInfoViewModel: CourseInfoViewModel = hiltViewModel()
+) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
+    val nextDoseTimes = courseInfoViewModel.nextDoseTimes
+
     QualWorkTheme {
         Scaffold(
             topBar = {
@@ -87,8 +93,10 @@ fun TreatMainPage(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(courses) { item ->
+                            val scheduleId = item.schedules.firstOrNull()?.id
                            CourseCard(
                                medicationWithSchedules = item,
+                               nextDoseTime = scheduleId?.let { nextDoseTimes[it] },
                                onClick = { onCourseClick(item.schedules.first().id) }
                            )
                         }
@@ -127,6 +135,7 @@ fun AddCourseFab(onClick: () -> Unit) {
 @Composable
 fun CourseCard(
     medicationWithSchedules: MedicationWithSchedules,
+    nextDoseTime: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -159,6 +168,24 @@ fun CourseCard(
             }
 
            HorizontalDivider()
+
+            // час наступного прийому
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = nextDoseTime?.let { "Наступний прийом: $it" } ?: "Розраховується...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

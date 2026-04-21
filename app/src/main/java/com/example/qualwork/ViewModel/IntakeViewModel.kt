@@ -79,10 +79,6 @@ class IntakeViewModel @Inject constructor(
         viewModelScope.launch {
             isLoading = true
             try {
-                intakeLogRepository.logIntake(
-                    schedule = currentSchedule,
-                    taken = false
-                )
                 notificationScheduler.scheduleDelayed(
                     delayMinutes = 30,
                     medicationName = medication?.name ?: "",

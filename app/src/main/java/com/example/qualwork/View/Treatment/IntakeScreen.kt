@@ -109,24 +109,7 @@ fun IntakeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Запланований час прийому
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Запланований прийом",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = formattedDoseTime,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+
 
                 Spacer(modifier = Modifier.weight(1f))
 
