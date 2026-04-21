@@ -17,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,18 +45,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.AddCourseViewModel
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import com.example.qualwork.ViewModel.CourseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TreatMainPage(
     onAddCourseClick: () -> Unit,
     onCourseClick: (Long) -> Unit,
-    viewModel: AddCourseViewModel = hiltViewModel()){
+    viewModel: CourseViewModel = hiltViewModel()){
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     QualWorkTheme {
         Scaffold(
@@ -136,7 +131,6 @@ fun CourseCard(
     modifier: Modifier = Modifier
 ) {
     val medication = medicationWithSchedules.medication
-    val schedule = medicationWithSchedules.schedules.firstOrNull()
 
     Card(
         modifier = modifier
@@ -148,7 +142,6 @@ fun CourseCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Назва та форма
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -166,64 +159,7 @@ fun CourseCard(
             }
 
            HorizontalDivider()
-
-//            schedule?.let { s ->
-//                // Дозування та інтервал
-//                Row(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    horizontalArrangement = Arrangement.SpaceBetween
-//                ) {
-//                    LabeledValue(
-//                        label = "Дозування",
-//                        value = "${s.dosage} ${medication.form.unit}"
-//                    )
-//                    LabeledValue(
-//                        label = "Інтервал",
-//                        value = intervalLabel(s.intervalHours)
-//                    )
-//                    LabeledValue(
-//                        label = "Час прийому",
-//                        value = s.startTime
-//                    )
-//                }
-//
-//                HorizontalDivider()
-//
-//                // Дати
-//                Row(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    horizontalArrangement = Arrangement.SpaceBetween
-//                ) {
-//                    LabeledValue(
-//                        label = "Початок",
-//                        value = formatDate(s.startDate)
-//                    )
-//                    LabeledValue(
-//                        label = "Кінець",
-//                        value = s.endDate?.let { formatDate(it) } ?: "Безстроково"
-//                    )
-//                    LabeledValue(
-//                        label = "ID курсу",
-//                        value = "${s.id}"
-//                    )
-//                }
-//            }
         }
-    }
-}
-
-@Composable
-private fun LabeledValue(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium
-        )
     }
 }
 @Composable
@@ -266,14 +202,14 @@ fun NotificationTestCard(
                 }
             }
 
-            // Кнопка із затримкою
             OutlinedButton(
                 onClick = {
                     scheduler.scheduleDelayed(
                         delayMinutes = delayMinutes,
                         medicationName = "Тестовий препарат",
                         dosage = 1,
-                        unit = "таблетка"
+                        unit = "таблетка",
+                        scheduleId = 9999L
                     )
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -282,11 +218,4 @@ fun NotificationTestCard(
             }
         }
     }
-}
-
-private fun getCurrentTime(): String {
-    val calendar = Calendar.getInstance()
-    val hours = calendar.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')
-    val minutes = calendar.get(Calendar.MINUTE).toString().padStart(2, '0')
-    return "$hours:$minutes"
 }

@@ -50,7 +50,7 @@ import androidx.compose.ui.text.input.ImeAction
 import com.example.qualwork.Model.Entity.searchMedication
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
-import com.example.qualwork.ViewModel.MyViewModel
+import com.example.qualwork.ViewModel.SearchViewModel
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -62,7 +62,7 @@ import com.example.qualwork.ViewModel.FilterState
 
 @ExperimentalMaterial3Api
 @Composable
-fun SearchBarScreen(viewModel: MyViewModel, openMedInfo: (searchMedication) -> Unit, onBack: () -> Unit){
+fun SearchBarScreen(viewModel: SearchViewModel, openMedInfo: (searchMedication) -> Unit, onBack: () -> Unit){
     QualWorkTheme {
         val query by viewModel.searchQuery.collectAsState()
         val searchState by viewModel.searchState.collectAsState()

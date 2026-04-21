@@ -34,7 +34,7 @@ enum class SortType {
     BY_DISTANCE,
     BY_PRICE
 }
-class MyViewModel(application: Application): AndroidViewModel(application) {
+class SearchViewModel(application: Application): AndroidViewModel(application) {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
     private var originalSearchMedications: List<searchMedication> = emptyList()
@@ -117,7 +117,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
                     userLon = userLocation?.second
                 )
 
-                val eLikyStatus = DataScraper.checkELiky(details.name)
+                val eLikyStatus = DataScraper.checkSocialProgram(details.name)
                 android.util.Log.d("ELIKY", "status: $eLikyStatus")
 
                 _allPharmacies.value = if (userLocation != null) {
@@ -138,7 +138,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
                 MedicineInfoUiState.Success(
                     details.copy(
                         pharmacies = sortPharmacies(_allPharmacies.value, _sortType.value),
-                        eLikyStatus = eLikyStatus
+                        socialProgramStatus = eLikyStatus
                     )
                 )
             } catch (e: Exception) {
@@ -162,7 +162,6 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
             }
         }
     }
-
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     fun updateQuery(query: String) {

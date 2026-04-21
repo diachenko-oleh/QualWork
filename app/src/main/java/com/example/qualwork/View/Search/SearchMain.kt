@@ -29,14 +29,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.qualwork.Model.Repository.LocationHelper
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.MyViewModel
+import com.example.qualwork.ViewModel.SearchViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchMainPage(viewModel: MyViewModel, openSearchBarScreen: () -> Unit){
+fun SearchMainPage(viewModel: SearchViewModel, openSearchBarScreen: () -> Unit){
     var isPermissionGranted by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()

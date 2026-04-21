@@ -10,7 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.MyViewModel
+import com.example.qualwork.ViewModel.SearchViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets
 fun SearchScreen() {
     QualWorkTheme {
         val navController = rememberNavController()
-        val viewModel: MyViewModel = viewModel()
+        val viewModel: SearchViewModel = viewModel()
         NavHost(
             navController = navController,
             startDestination = SearchTabNavigator.SearchMain.route,

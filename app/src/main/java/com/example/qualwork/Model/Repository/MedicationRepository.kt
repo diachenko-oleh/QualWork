@@ -74,9 +74,4 @@ class MedicationRepository @Inject constructor(
     fun getAllWithSchedules(): Flow<List<MedicationWithSchedules>> =
         medicationDao.getAllWithSchedules()
 
-    fun getActiveSchedules(today: Long): Flow<List<Schedule>> =
-        scheduleDao.getActiveSchedules(today)
-
-    suspend fun deleteCourse(medication: Medication) =
-        medicationDao.delete(medication)
 }

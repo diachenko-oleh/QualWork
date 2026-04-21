@@ -52,8 +52,7 @@ fun SettingsMainPage(
                     title = {
                         Text(
                             text="Налаштування",
-                            modifier = Modifier.fillMaxWidth(),
-                            //textAlign = TextAlign.Center
+                            modifier = Modifier.fillMaxWidth()
                         )
                     },
                     modifier = Modifier

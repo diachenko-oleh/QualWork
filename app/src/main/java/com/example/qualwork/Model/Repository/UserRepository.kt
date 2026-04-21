@@ -21,10 +21,9 @@ class UserRepository(
 
     suspend fun getById(id: String): User? = userDao.getById(id)
     suspend fun getByCode(code: String): User? = userDao.getByCode(code)
-    suspend fun getAllUsers(): List<User> {
+    fun getAllUsers(): List<User> {
         return userDao.getAll()
     }
-
     private suspend fun generateUniqueCode(): String {
         var code = CodeGenerator.generate()
         while (userDao.getByCode(code) != null) {

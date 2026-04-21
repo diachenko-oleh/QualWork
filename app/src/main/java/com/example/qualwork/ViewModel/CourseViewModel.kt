@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AddCourseViewModel @Inject constructor(
+class CourseViewModel @Inject constructor(
     private val repository: MedicationRepository,
     private val userPreferences: UserPreferences,
     private val notificationScheduler: NotificationScheduler

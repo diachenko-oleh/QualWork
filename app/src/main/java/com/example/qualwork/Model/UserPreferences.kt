@@ -11,8 +11,7 @@ class UserPreferences(private val context: Context) {
 
     private val dataStore = context.dataStore
 
-    val currentUserId: Flow<String?> = dataStore.data
-        .map { preferences ->
+    val currentUserId: Flow<String?> = dataStore.data.map { preferences ->
             preferences[USER_ID_KEY]
         }
 

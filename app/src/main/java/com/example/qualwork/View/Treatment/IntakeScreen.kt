@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -64,7 +66,17 @@ fun IntakeScreen(
         return
     }
 
-    val doseTime = System.currentTimeMillis()
+    if (medication == null || schedule == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val formattedDoseTime = remember(viewModel.nextDoseTime) {
+        SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
+            .format(Date(viewModel.nextDoseTime))
+    }
 
     QualWorkTheme {
         Scaffold { padding ->
@@ -85,8 +97,6 @@ fun IntakeScreen(
                     tint = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = medication.name,
                     style = MaterialTheme.typography.headlineMedium,
@@ -99,16 +109,36 @@ fun IntakeScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Text(
-                    text = "Час прийому: ${schedule.startTime}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Запланований час прийому
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Запланований прийом",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = formattedDoseTime,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                Text(
+                    text = "Прийом препарату за $formattedDoseTime",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
                 Button(
-                    onClick = { viewModel.takeMedication(scheduleId, doseTime) },
+                    onClick = { viewModel.takeMedication() },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -127,10 +157,7 @@ fun IntakeScreen(
 
                 OutlinedButton(
                     onClick = {
-                        viewModel.snoozeMedication(
-                            scheduleId = scheduleId,
-                            doseTime = doseTime
-                        )
+                        viewModel.snoozeMedication()
                     },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
@@ -146,7 +173,7 @@ fun IntakeScreen(
                 }
 
                 TextButton(
-                    onClick = { viewModel.skipMedication(scheduleId, doseTime) },
+                    onClick = { viewModel.skipMedication() },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()

@@ -1,6 +1,6 @@
 package com.example.qualwork.Model.Entity
 
-import com.example.qualwork.Model.Repository.ELikyStatus
+import com.example.qualwork.Model.Repository.SocialProgramStatus
 
 data class searchMedication(
     val name: String,
@@ -11,5 +11,5 @@ data class searchMedication(
     val isExact: Boolean = true,
     val pharmacyCount: Int = 0,
     val pharmacies: List<Pharmacy> = emptyList(),
-    val eLikyStatus: ELikyStatus = ELikyStatus.NOT_FOUND
+    val socialProgramStatus: SocialProgramStatus = SocialProgramStatus.NOT_FOUND
 )

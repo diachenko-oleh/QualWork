@@ -1,6 +1,5 @@
 package com.example.qualwork.Model.Entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -18,6 +17,5 @@ data class Medication(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    //@ColumnInfo(name = "form")
     val form: MedicationForm
 )

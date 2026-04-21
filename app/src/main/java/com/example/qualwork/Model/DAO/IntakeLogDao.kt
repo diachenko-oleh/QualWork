@@ -84,18 +84,10 @@ interface IntakeLogDao {
     """)
     suspend fun countMissed(scheduleId: Long):Int
 
-
-    // Last intake for schedule
-    @Query("""
-        SELECT * FROM intake_logs
-        WHERE scheduleId = :scheduleId
-        ORDER BY intakeTime DESC
-        LIMIT 1
-    """)
-    suspend fun getLastLog(scheduleId: Long): IntakeLog?
-
-
     // Delete old logs (cleanup, optional)
     @Query("DELETE FROM intake_logs WHERE intakeTime < :before")
     suspend fun deleteOlderThan(before: Long)
+
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY doseTime DESC LIMIT 1")
+    suspend fun getLastLog(scheduleId: Long): IntakeLog?
 }

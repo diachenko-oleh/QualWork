@@ -4,7 +4,9 @@ import android.Manifest
 import android.R
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -13,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -28,13 +31,14 @@ class NotificationWorker @AssistedInject constructor(
         val dosage = inputData.getInt(KEY_DOSAGE, 1)
         val unit = inputData.getString(KEY_UNIT) ?: ""
         val endDate = inputData.getLong(KEY_END_DATE, -1L)
+        val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
 
-        // Якщо курс завершено — зупиняємо Worker
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
         try {
-            showNotification(context, medicationName, dosage, unit)
+            Log.d("NOTIF_FLOW", "before notification scheduleId = $scheduleId")
+            showNotification(medicationName, dosage, unit, scheduleId)
             return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
@@ -43,10 +47,10 @@ class NotificationWorker @AssistedInject constructor(
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun showNotification(
-        context: Context,
         medicationName: String,
         dosage: Int,
-        unit: String
+        unit: String,
+        scheduleId: Long
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -54,23 +58,35 @@ class NotificationWorker @AssistedInject constructor(
                 "Прийом ліків",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Нагадування про прийом лікарських засобів"
+                description = "Нагадування про прийом лікарського засобу"
             }
             context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("openIntake", true)
+            putExtra("scheduleId", scheduleId)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            scheduleId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        Log.d("NOTIF_FLOW", "Creating notification scheduleId = $scheduleId")
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Час приймати $medicationName")
             .setContentText("Дозування: $dosage $unit")
+            .setContentText("Натисніть на повідомлення для деталей")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-           /* .addAction(0, "Прийняв", takeMed)
-            .addAction(0, "30 хв пізніше", wait)
-            .addAction(0, "Пропустити", skipMed)*/
+            .setContentIntent(pendingIntent)
             .build()
 
-        NotificationManagerCompat.from(context).notify(medicationName.hashCode(), notification)
+        NotificationManagerCompat.from(context).notify(scheduleId.toInt(), notification)
     }
 
     companion object {
@@ -79,5 +95,6 @@ class NotificationWorker @AssistedInject constructor(
         const val KEY_DOSAGE = "dosage"
         const val KEY_UNIT = "unit"
         const val KEY_END_DATE = "end_date"
+        const val KEY_SCHEDULE_ID = "schedule_id"
     }
 }

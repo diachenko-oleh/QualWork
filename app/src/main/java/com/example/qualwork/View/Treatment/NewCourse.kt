@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,14 +56,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.AddCourseViewModel
+import com.example.qualwork.ViewModel.CourseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +70,7 @@ fun NewCourse(
     courseId: Long? = null,
     onBackClick: () -> Unit,
     onCourseAdded: () -> Unit,
-    viewModel: AddCourseViewModel = hiltViewModel()
+    viewModel: CourseViewModel = hiltViewModel()
 ){
     var currentStep by remember { mutableIntStateOf(1) }
     LaunchedEffect(viewModel.savedSuccessfully) {
@@ -206,7 +204,7 @@ private fun StepIndicator(currentStep: Int, totalSteps: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Step1Content(viewModel: AddCourseViewModel){
+private fun Step1Content(viewModel: CourseViewModel){
     val forms = MedicationForm.entries
     var formDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -258,7 +256,7 @@ private fun Step1Content(viewModel: AddCourseViewModel){
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Step2Content(viewModel: AddCourseViewModel) {
+private fun Step2Content(viewModel: CourseViewModel) {
     val intervals = listOf(4, 6, 8, 12, 24, 48, 72)
     var intervalDropdownExpanded by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -351,7 +349,7 @@ private fun Step2Content(viewModel: AddCourseViewModel) {
 }
 
 @Composable
-private fun Step3Content(viewModel: AddCourseViewModel) {
+private fun Step3Content(viewModel: CourseViewModel) {
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
     var isIndefinite by remember { mutableStateOf(viewModel.endDate == null) }

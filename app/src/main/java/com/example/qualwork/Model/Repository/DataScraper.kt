@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import kotlin.math.pow
 
-enum class ELikyStatus {
+enum class SocialProgramStatus {
     AVAILABLE,
     NOT_AVAILABLE,
     NOT_FOUND
@@ -142,7 +142,7 @@ object DataScraper{
             )
         }
 
-    suspend fun checkELiky(medicineName: String): ELikyStatus = withContext(Dispatchers.IO) {
+    suspend fun checkSocialProgram(medicineName: String): SocialProgramStatus = withContext(Dispatchers.IO) {
         try {
             val searchQuery = medicineName
                 .split(" ")
@@ -175,15 +175,15 @@ object DataScraper{
             }
 
             return@withContext if (matchingCards.isEmpty()) {
-                ELikyStatus.NOT_FOUND
+                SocialProgramStatus.NOT_FOUND
             } else if (hasAnyDlLogo) {
-                ELikyStatus.AVAILABLE
+                SocialProgramStatus.AVAILABLE
             } else {
-                ELikyStatus.NOT_AVAILABLE
+                SocialProgramStatus.NOT_AVAILABLE
             }
         } catch (e: Exception) {
             android.util.Log.e("ELIKY", "error: ${e.message}")
-            ELikyStatus.NOT_FOUND
+            SocialProgramStatus.NOT_FOUND
         }
     }
     fun calculateDistance(

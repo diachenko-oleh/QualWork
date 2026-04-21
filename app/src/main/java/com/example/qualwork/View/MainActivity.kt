@@ -1,9 +1,11 @@
 package com.example.qualwork.View
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,6 +25,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -30,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.app.ActivityCompat
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.qualwork.View.Settings.SettingsScreen
@@ -41,19 +45,25 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private var intakeScheduleId by mutableStateOf<Long?>(null)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (!isGranted) {
-            android.util.Log.d("Notifications", "Дозвіл відхилено")
+            Log.d("Notifications", "Дозвіл відхилено")
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleIntent(intent)
+
         setContent {
             QualWorkTheme {
-                RootNavHost()
+                RootNavHost(
+                    pendingIntakeId = intakeScheduleId,
+                    onIntakeHandled = { intakeScheduleId = null }
+                )
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -66,14 +76,28 @@ class MainActivity : ComponentActivity() {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
 
+    private fun handleIntent(intent: Intent) {
+        Log.d("NOTIF_FLOW", "handleIntent called")
+
+        val id = intent.getLongExtra("scheduleId", -1L)
+
+        if (id != -1L) {
+            intakeScheduleId = id
+            Log.d("NOTIF_FLOW", "scheduleId received = $id")
+        }
     }
 }
-@PreviewScreenSizes
 @Composable
-fun QualWorkApp() {
+fun QualWorkApp(
+    navController: NavHostController
+) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.TREATMENT) }
-    val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -118,7 +142,9 @@ fun QualWorkApp() {
     ) {
         when (currentDestination) {
             AppDestinations.SEARCH -> SearchScreen()
-            AppDestinations.TREATMENT -> TreatmentScreen(navController = navController)
+            AppDestinations.TREATMENT -> TreatmentScreen(
+                navController = navController
+            )
             AppDestinations.PROFILE -> SettingsScreen()
 
         }

@@ -32,10 +32,10 @@ object LocationHelper {
                 .trim()
                 .replace(" ", "-")
 
-                android.util.Log.d("SCRAPER", "city slug: $city")
+                //android.util.Log.d("SCRAPER", "city slug: $city")
             city.ifEmpty { "kyiv" }
         } catch (e: Exception) {
-                android.util.Log.e("SCRAPER", "getCitySlug error: ${e.message}")
+                //android.util.Log.e("SCRAPER", "getCitySlug error: ${e.message}")
             "kyiv"
         }
     }

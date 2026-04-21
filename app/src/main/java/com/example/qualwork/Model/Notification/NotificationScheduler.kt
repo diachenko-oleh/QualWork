@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class NotificationScheduler @Inject constructor(
-    private val context: Context
+    context: Context
 ) {
     private val workManager = WorkManager.getInstance(context)
 
@@ -32,7 +32,8 @@ class NotificationScheduler @Inject constructor(
             NotificationWorker.KEY_MEDICATION_NAME to medicationName,
             NotificationWorker.KEY_DOSAGE to dosage,
             NotificationWorker.KEY_UNIT to unit,
-            NotificationWorker.KEY_END_DATE to (endDate ?: -1L)
+            NotificationWorker.KEY_END_DATE to (endDate ?: -1L),
+            NotificationWorker.KEY_SCHEDULE_ID to scheduleId
         )
 
         val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
@@ -44,7 +45,6 @@ class NotificationScheduler @Inject constructor(
             .addTag(scheduleId.toString())
             .build()
 
-        //ствоюємо цикл
         workManager.enqueueUniquePeriodicWork(
             scheduleId.toString(),
             ExistingPeriodicWorkPolicy.REPLACE,
@@ -83,13 +83,15 @@ class NotificationScheduler @Inject constructor(
         delayMinutes: Int,
         medicationName: String,
         dosage: Int,
-        unit: String
+        unit: String,
+        scheduleId:Long
     ) {
         val inputData = workDataOf(
             NotificationWorker.KEY_MEDICATION_NAME to medicationName,
             NotificationWorker.KEY_DOSAGE to dosage,
             NotificationWorker.KEY_UNIT to unit,
-            NotificationWorker.KEY_END_DATE to -1L
+            NotificationWorker.KEY_END_DATE to -1L,
+            NotificationWorker.KEY_SCHEDULE_ID to scheduleId
         )
 
         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()

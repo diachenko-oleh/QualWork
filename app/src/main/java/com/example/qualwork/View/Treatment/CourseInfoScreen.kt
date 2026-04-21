@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.qualwork.ViewModel.AddCourseViewModel
+import com.example.qualwork.ViewModel.CourseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +46,7 @@ fun CourseInfoScreen(
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit,
     onIntakeClick: (Long) -> Unit,
-    viewModel: AddCourseViewModel = hiltViewModel()
+    viewModel: CourseViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }

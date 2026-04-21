@@ -45,17 +45,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.qualwork.Model.Entity.Pharmacy
-import com.example.qualwork.Model.Repository.ELikyStatus
+import com.example.qualwork.Model.Repository.SocialProgramStatus
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineInfoUiState
-import com.example.qualwork.ViewModel.MyViewModel
+import com.example.qualwork.ViewModel.SearchViewModel
 import com.example.qualwork.ViewModel.SortType
 import androidx.core.net.toUri
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String) {
+fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: String) {
     val context = LocalContext.current
     val sortType by viewModel.sortType.collectAsState()
     val medInfoState by viewModel.medInfoState.collectAsState()
@@ -173,7 +173,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
                         item {
                             RecommendationBlock(
                                 pharmacies = allPharmacies,
-                                eLikyStatus = state.searchMedication.eLikyStatus,
+                                socialProgramStatus = state.searchMedication.socialProgramStatus,
                                 medicineName = state.searchMedication.name
                             )
                         }
@@ -229,7 +229,7 @@ fun MedInfoPage(viewModel: MyViewModel, onBack: () -> Unit, medicineUrl: String)
 @Composable
 fun RecommendationBlock(
     pharmacies: List<Pharmacy>,
-    eLikyStatus: ELikyStatus,
+    socialProgramStatus: SocialProgramStatus,
     medicineName: String
 ) {
     if (pharmacies.isEmpty()) return
@@ -340,8 +340,8 @@ fun RecommendationBlock(
             Spacer(modifier = Modifier.height(4.dp))
 
             val context = LocalContext.current
-            when (eLikyStatus) {
-                ELikyStatus.AVAILABLE -> {
+            when (socialProgramStatus) {
+                SocialProgramStatus.AVAILABLE -> {
                     Text(
                         text = "Препарат можна отримати через програму \"Доступні ліки\"",
                         style = MaterialTheme.typography.bodyMedium,
@@ -365,7 +365,7 @@ fun RecommendationBlock(
                     }
                 }
 
-                ELikyStatus.NOT_AVAILABLE -> {
+                SocialProgramStatus.NOT_AVAILABLE -> {
                     Text(
                         text = "Препарат не входить до програми \"Доступні ліки\"",
                         style = MaterialTheme.typography.bodyMedium,
@@ -373,7 +373,7 @@ fun RecommendationBlock(
                     )
                 }
 
-                ELikyStatus.NOT_FOUND -> {
+                SocialProgramStatus.NOT_FOUND -> {
                     Text(
                         text = "Інформація відсутня",
                         style = MaterialTheme.typography.bodyMedium,
