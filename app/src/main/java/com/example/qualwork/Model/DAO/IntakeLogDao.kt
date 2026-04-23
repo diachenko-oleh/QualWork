@@ -45,15 +45,12 @@ interface IntakeLogDao {
     @Query("SELECT * FROM intake_logs ORDER BY intakeTime DESC")
     fun getAll(): Flow<List<IntakeLog>>
 
-
-    // Logs for specific schedule
-    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY doseTime DESC")
-    fun getBySchedule(scheduleId: Long): Flow<List<IntakeLog>>
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId")
+    fun getByScheduleId(scheduleId: Long): Flow<List<IntakeLog>>
 
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND doseTime = :doseTime LIMIT 1")
     suspend fun getByScheduleAndDoseTime(scheduleId: Long, doseTime: Long): IntakeLog?
 
-    // Logs in time range (дуже корисно для календаря/статистики)
     @Query("""
         SELECT * FROM intake_logs
         WHERE intakeTime BETWEEN :from AND :to
@@ -61,8 +58,6 @@ interface IntakeLogDao {
     """)
     fun getByTimeRange(from: Long, to: Long): Flow<List<IntakeLog>>
 
-
-    // Only taken / not taken
     @Query("""
         SELECT * FROM intake_logs
         WHERE scheduleId = :scheduleId AND taken = :taken
@@ -83,10 +78,6 @@ interface IntakeLogDao {
         WHERE scheduleId = :scheduleId AND taken = 0
     """)
     suspend fun countMissed(scheduleId: Long):Int
-
-    // Delete old logs (cleanup, optional)
-    @Query("DELETE FROM intake_logs WHERE intakeTime < :before")
-    suspend fun deleteOlderThan(before: Long)
 
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY doseTime DESC LIMIT 1")
     suspend fun getLastLog(scheduleId: Long): IntakeLog?

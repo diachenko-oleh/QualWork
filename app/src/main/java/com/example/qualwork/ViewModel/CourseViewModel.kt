@@ -2,27 +2,32 @@ package com.example.qualwork.ViewModel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
+import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 @HiltViewModel
 class CourseViewModel @Inject constructor(
-    private val repository: MedicationRepository,
+    private val medRepository: MedicationRepository,
+    private val intakeRepository: IntakeLogRepository,
     private val userPreferences: UserPreferences,
     private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
@@ -30,7 +35,7 @@ class CourseViewModel @Inject constructor(
 
     fun loadCourse(courseId: Long) {
         viewModelScope.launch {
-            val courseData = repository.getAllWithSchedules().first()
+            val courseData = medRepository.getAllWithSchedules().first()
                 .find { it.schedules.any { s -> s.id == courseId } }
                 ?: return@launch
 
@@ -55,13 +60,14 @@ class CourseViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 notificationScheduler.cancelNotifications(scheduleId)
-                repository.deleteCourse(scheduleId)
+                medRepository.deleteCourse(scheduleId)
                 deletedSuccessfully = true
             } catch (e: Exception) {
                 android.util.Log.e("AddCourse", "Помилка видалення: ${e.message}")
             }
         }
     }
+
     private var userId: String = ""
     init {
         viewModelScope.launch {
@@ -84,9 +90,13 @@ class CourseViewModel @Inject constructor(
         private set
 
     //збереження тривалості
-    var startDate by mutableLongStateOf(System.currentTimeMillis())
+    var startDate by mutableStateOf(System.currentTimeMillis())
         private set
     var endDate by mutableStateOf<Long?>(null)
+        private set
+    var isIndefinite by mutableStateOf(false)
+        private set
+    var duration by mutableStateOf<CourseDuration?>(null)
         private set
 
 
@@ -100,8 +110,47 @@ class CourseViewModel @Inject constructor(
     fun onIntervalChange(value: Int) { intervalHours = value }
     fun onStartTimeChange(value: String) { startTime = value }
     fun onDosageChange(value: Int) { dosage = value }
-    fun onStartDateChange(value: Long) { startDate = value }
-    fun onEndDateChange(value: Long?) { endDate = value }
+    fun onStartDateChange(date: Long) {
+        startDate = date
+        recalculateEndDate()
+    }
+    fun onDurationSelected(newDuration: CourseDuration) {
+        duration = newDuration
+        recalculateEndDate()
+    }
+    fun onIndefiniteChange(value: Boolean) {
+        isIndefinite = value
+
+        if (value) {
+            endDate = null
+        } else {
+            recalculateEndDate()
+        }
+    }
+
+    private fun recalculateEndDate() {
+        if (isIndefinite) {
+            endDate = null
+            return
+        }
+
+        val d = duration ?: return
+
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = startDate
+        }
+
+        when (d) {
+            CourseDuration.WEEK_1 -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            CourseDuration.WEEK_2 -> calendar.add(Calendar.WEEK_OF_YEAR, 2)
+            CourseDuration.WEEK_3 -> calendar.add(Calendar.WEEK_OF_YEAR, 3)
+            CourseDuration.MONTH_1 -> calendar.add(Calendar.MONTH, 1)
+            CourseDuration.MONTH_2 -> calendar.add(Calendar.MONTH, 2)
+            CourseDuration.MONTH_3 -> calendar.add(Calendar.MONTH, 3)
+        }
+
+        endDate = calendar.timeInMillis
+    }
 
     fun isStep1Valid() = medicationName.isNotBlank()
     fun isStep2Valid() = dosage > 0
@@ -112,7 +161,7 @@ class CourseViewModel @Inject constructor(
             isSaving = true
             try {
                 val scheduleId = if (editingScheduleId == null) {
-                    repository.saveCourse(
+                    medRepository.saveCourse(
                         name = medicationName.trim(),
                         form = medicationForm,
                         startDate = startDate,
@@ -123,7 +172,7 @@ class CourseViewModel @Inject constructor(
                         userId = userId
                     )
                 } else {
-                    repository.updateCourse(
+                    medRepository.updateCourse(
                         scheduleId = editingScheduleId!!,
                         name = medicationName.trim(),
                         form = medicationForm,
@@ -157,10 +206,41 @@ class CourseViewModel @Inject constructor(
 
     fun getScheduler(): NotificationScheduler = notificationScheduler
     val courses: StateFlow<List<MedicationWithSchedules>> =
-        repository.getAllWithSchedules()
+        medRepository.getAllWithSchedules()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList()
             )
+
+    fun getStats(scheduleId: Long): Flow<List<DayIntakeStat>> {
+        return intakeRepository.getLogsForSchedule(scheduleId)
+            .map { logs ->
+
+                logs.groupBy { it.intakeDate }
+                    .map { (date, items) ->
+
+                        val total = items.size
+                        val taken = items.count { it.taken }
+
+                        DayIntakeStat(
+                            date = date,
+                            total = total,
+                            taken = taken
+                        )
+                    }
+                    .sortedBy { it.date }
+            }
+    }
+
+
+    enum class CourseDuration(val label: String) {
+        WEEK_1("1 тиждень"),
+        WEEK_2("2 тижні"),
+        WEEK_3("3 тижні"),
+        MONTH_1("1 місяць"),
+        MONTH_2("2 місяці"),
+        MONTH_3("3 місяці")
+    }
 }
+

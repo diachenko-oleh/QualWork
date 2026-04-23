@@ -14,16 +14,21 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
+    val doseTime = System.currentTimeMillis()
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
@@ -32,7 +37,7 @@ class NotificationWorker @AssistedInject constructor(
         val unit = inputData.getString(KEY_UNIT) ?: ""
         val endDate = inputData.getLong(KEY_END_DATE, -1L)
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
-
+        scheduleMissedCheck(scheduleId, doseTime)
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
@@ -43,6 +48,19 @@ class NotificationWorker @AssistedInject constructor(
         } catch (e: SecurityException) {
             return Result.failure()
         }
+    }
+    private fun scheduleMissedCheck(scheduleId: Long, doseTime: Long) {
+        val inputData = workDataOf(
+            "scheduleId" to scheduleId,
+            "doseTime" to doseTime
+        )
+
+        val work = OneTimeWorkRequestBuilder<MissedWorker>()
+            .setInitialDelay(30, TimeUnit.MINUTES)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(work)
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -63,9 +81,12 @@ class NotificationWorker @AssistedInject constructor(
             context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
 
+
+
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("openIntake", true)
             putExtra("scheduleId", scheduleId)
+            putExtra("doseTime", doseTime)
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 

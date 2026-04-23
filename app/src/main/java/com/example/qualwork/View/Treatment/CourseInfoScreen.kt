@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -28,21 +30,20 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
-import com.example.qualwork.ViewModel.IntakeViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
+import androidx.compose.foundation.lazy.items
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseInfoScreen(
@@ -55,6 +56,9 @@ fun CourseInfoScreen(
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val stats by viewModel
+        .getStats(courseId)
+        .collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
@@ -180,6 +184,17 @@ fun CourseInfoScreen(
 
                 }
             }
+            Text(
+                text = "Статистика прийому",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            LazyRow {
+                items(stats) { day ->
+                    DayStatCard(day)
+                }
+            }
+
 
             if (showDeleteDialog) {
                 AlertDialog(
@@ -232,5 +247,40 @@ private fun InfoRow(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium
         )
+    }
+}
+
+@Composable
+fun DayStatCard(stat: DayIntakeStat) {
+
+    Card(
+        modifier = Modifier
+            .width(120.dp)
+            .height(100.dp)
+    ) {
+
+        Column(
+            modifier = Modifier
+                .padding(8.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            Text(
+                text = stat.date,
+                style = MaterialTheme.typography.labelMedium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Прийнято: ${stat.taken}",
+                color = Color.Green
+            )
+
+            Text(
+                text = "Пропущено: ${stat.missed}",
+                color = Color.Red
+            )
+        }
     }
 }

@@ -46,6 +46,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var intakeScheduleId by mutableStateOf<Long?>(null)
+    private var doseTime by mutableStateOf<Long?>(null)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
             QualWorkTheme {
                 RootNavHost(
                     pendingIntakeId = intakeScheduleId,
+                    pendingDoseTime = doseTime,
                     onIntakeHandled = { intakeScheduleId = null }
                 )
             }
@@ -83,13 +85,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        Log.d("NOTIF_FLOW", "handleIntent called")
+        //Log.d("NOTIF_FLOW", "handleIntent called")
 
         val id = intent.getLongExtra("scheduleId", -1L)
+        val time = intent.getLongExtra("doseTime", -1L)
 
         if (id != -1L) {
             intakeScheduleId = id
-            Log.d("NOTIF_FLOW", "scheduleId received = $id")
+            doseTime = time
+            //Log.d("NOTIF_FLOW", "scheduleId received = $id")
         }
     }
 }

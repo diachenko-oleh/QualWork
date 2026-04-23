@@ -42,6 +42,7 @@ import java.util.Locale
 @Composable
 fun IntakeScreen(
     scheduleId: Long,
+    doseTime: Long,
     onActionCompleted: () -> Unit,
     viewModel: IntakeViewModel = hiltViewModel()
 ) {
@@ -56,6 +57,12 @@ fun IntakeScreen(
     val medication = viewModel.medication
     val schedule = viewModel.schedule
 
+    val isExpired = System.currentTimeMillis() > doseTime + 30 * 60 * 1000
+
+    if (isExpired) {
+        Text("Час прийому минув")
+        return
+    }
     if (medication == null || schedule == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -138,22 +145,22 @@ fun IntakeScreen(
                     )
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        viewModel.snoozeMedication()
-                    },
-                    enabled = !viewModel.isLoading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                ) {
-                    Icon(Icons.Rounded.Schedule, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Відкласти на 30 хв",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
+//                OutlinedButton(
+//                    onClick = {
+//                        viewModel.snoozeMedication()
+//                    },
+//                    enabled = !viewModel.isLoading,
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(56.dp)
+//                ) {
+//                    Icon(Icons.Rounded.Schedule, contentDescription = null)
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Text(
+//                        text = "Відкласти на 30 хв",
+//                        style = MaterialTheme.typography.titleMedium
+//                    )
+//                }
 
                 TextButton(
                     onClick = { viewModel.skipMedication() },

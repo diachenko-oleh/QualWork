@@ -18,20 +18,31 @@ import kotlinx.coroutines.delay
 @Composable
 fun RootNavHost(
     pendingIntakeId: Long?,
+    pendingDoseTime: Long?,
     onIntakeHandled: () -> Unit
 ) {
     Log.d("NOTIF_FLOW", "RootNavHost intakeScheduleId = $pendingIntakeId")
     val navController = rememberNavController()
-    LaunchedEffect(pendingIntakeId) {
-        pendingIntakeId?.let { id ->
 
-            navController.navigate(RootNavigator.Home.route) {
-                popUpTo(0)
+    LaunchedEffect(pendingIntakeId, pendingDoseTime) {
+        val id = pendingIntakeId
+        val doseTime = pendingDoseTime
+
+        if (id != null && doseTime != null) {
+
+            val now = System.currentTimeMillis()
+            val isValid = now <= doseTime + 30 * 60 * 1000 // 30 хв
+
+            if (isValid) {
+                navController.navigate(RootNavigator.Home.route) {
+                    popUpTo(0)
+                }
+                navController.navigate(
+                    TreatTabNavigator.Intake.createRoute(id, doseTime)
+                )
+            } else {
+                Log.d("NOTIF_FLOW", "Intake expired, navigation blocked")
             }
-
-            navController.navigate(
-                TreatTabNavigator.Intake.createRoute(id)
-            )
 
             onIntakeHandled()
         }
@@ -42,7 +53,7 @@ fun RootNavHost(
         startDestination = RootNavigator.SplashScreen.route
     ) {
         composable(RootNavigator.SplashScreen.route) {
-            Log.d("NAV", "SplashScreen entered")
+            //Log.d("NAV", "SplashScreen entered")
             SplashScreen(
                 onNavigateToHome = {
                     navController.navigate(RootNavigator.Home.route) {
@@ -80,6 +91,7 @@ fun RootNavHost(
         )
         {backStackEntry ->
             val courseId = backStackEntry.arguments?.getLong("courseId") ?: 0L
+            val doseTime = System.currentTimeMillis()
             CourseInfoScreen(
                 courseId = courseId,
                 onBackClick = { navController.popBackStack() },
@@ -87,7 +99,7 @@ fun RootNavHost(
                     navController.navigate(TreatTabNavigator.NewCourse.createRoute(medicationId))
                 },
                 onIntakeClick = { scheduleId ->
-                    navController.navigate(TreatTabNavigator.Intake.createRoute(scheduleId))
+                    navController.navigate(TreatTabNavigator.Intake.createRoute(scheduleId, doseTime))
                 }
             )
         }
@@ -113,13 +125,17 @@ fun RootNavHost(
 
         composable(
             route = TreatTabNavigator.Intake.route,
-            arguments = listOf(navArgument("scheduleId") { type = NavType.LongType }
+            arguments = listOf(
+                navArgument("scheduleId") { type = NavType.LongType },
+                navArgument("doseTime") { type = NavType.LongType }
             )
         )
         { backStackEntry ->
-            val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: 0L
+            val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: return@composable
+            val doseTime = backStackEntry.arguments?.getLong("doseTime")?: return@composable
             IntakeScreen(
                 scheduleId = scheduleId,
+                doseTime = doseTime,
                 onActionCompleted = { navController.popBackStack() }
             )
         }

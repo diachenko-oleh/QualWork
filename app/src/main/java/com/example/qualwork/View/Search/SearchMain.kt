@@ -70,6 +70,7 @@ fun SearchMainPage(viewModel: SearchViewModel, openSearchBarScreen: () -> Unit){
                 horizontalAlignment = Alignment.Companion.CenterHorizontally,
             ) {
                 SearchButton(openSearchBarScreen)
+
                 LocationInfoText(isPermissionGranted = isPermissionGranted)
             }
         }

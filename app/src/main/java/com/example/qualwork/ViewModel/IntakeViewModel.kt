@@ -150,4 +150,6 @@ class IntakeViewModel @Inject constructor(
         val sdf = SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
         return sdf.format(Date(timestamp))
     }
+
+
 }

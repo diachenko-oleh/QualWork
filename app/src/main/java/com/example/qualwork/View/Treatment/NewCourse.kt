@@ -257,7 +257,7 @@ private fun Step1Content(viewModel: CourseViewModel){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Step2Content(viewModel: CourseViewModel) {
-    val intervals = listOf(4, 6, 8, 12, 24, 48, 72)
+    val intervals = listOf(4, 6, 8, 12, 24)
     var intervalDropdownExpanded by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -348,11 +348,11 @@ private fun Step2Content(viewModel: CourseViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Step3Content(viewModel: CourseViewModel) {
     var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
-    var isIndefinite by remember { mutableStateOf(viewModel.endDate == null) }
+    var expanded by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
@@ -363,7 +363,7 @@ private fun Step3Content(viewModel: CourseViewModel) {
             label = { Text("Дата початку") },
             trailingIcon = {
                 IconButton(onClick = { showStartDatePicker = true }) {
-                    Icon(Icons.Rounded.CalendarMonth, contentDescription = "Обрати дату")
+                    Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -381,49 +381,62 @@ private fun Step3Content(viewModel: CourseViewModel) {
                 style = MaterialTheme.typography.bodyLarge
             )
             Switch(
-                checked = isIndefinite,
-                onCheckedChange = { checked ->
-                    isIndefinite = checked
-                    viewModel.onEndDateChange(if (checked) null else System.currentTimeMillis())
-                }
+                checked = viewModel.isIndefinite,
+                onCheckedChange = { viewModel.onIndefiniteChange(it) }
             )
         }
 
-        if (!isIndefinite) {
-            OutlinedTextField(
-                value = viewModel.endDate?.let { formatDate(it) } ?: "",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Дата закінчення") },
-                trailingIcon = {
-                    IconButton(onClick = { showEndDatePicker = true }) {
-                        Icon(Icons.Rounded.CalendarMonth, contentDescription = "Обрати дату")
+        if (!viewModel.isIndefinite) {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+
+                OutlinedTextField(
+                    value = viewModel.duration?.label ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Тривалість") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                    },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    CourseViewModel.CourseDuration.values().forEach { duration ->
+                        DropdownMenuItem(
+                            text = { Text(duration.label) },
+                            onClick = {
+                                expanded = false
+                                viewModel.onDurationSelected(duration)
+                            }
+                        )
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+                }
+            }
+            viewModel.endDate?.let {
+                Text(
+                    text = "Дата завершення: ${formatDate(it)}",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
     }
 
     if (showStartDatePicker) {
         DatePickerDialog(
             initialDate = viewModel.startDate,
-            onDateSelected = { date ->
-                viewModel.onStartDateChange(date)
+            onDateSelected = {
+                viewModel.onStartDateChange(it)
                 showStartDatePicker = false
             },
             onDismiss = { showStartDatePicker = false }
-        )
-    }
-
-    if (showEndDatePicker) {
-        DatePickerDialog(
-            initialDate = viewModel.endDate ?: System.currentTimeMillis(),
-            onDateSelected = { date ->
-                viewModel.onEndDateChange(date)
-                showEndDatePicker = false
-            },
-            onDismiss = { showEndDatePicker = false }
         )
     }
 }

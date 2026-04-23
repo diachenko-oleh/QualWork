@@ -34,7 +34,7 @@ class IntakeLogRepository @Inject constructor(
     }
 
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
-        intakeLogDao.getBySchedule(scheduleId)
+        intakeLogDao.getByScheduleId(scheduleId)
 
     private suspend fun calculateDoseTime(schedule: Schedule): Long {
         val now = System.currentTimeMillis()
