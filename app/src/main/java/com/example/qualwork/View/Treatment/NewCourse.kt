@@ -15,10 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -63,6 +61,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.CourseViewModel
+import com.example.qualwork.ViewModel.formatDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -257,63 +256,63 @@ private fun Step1Content(viewModel: CourseViewModel){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Step2Content(viewModel: CourseViewModel) {
-    val intervals = listOf(4, 6, 8, 12, 24)
-    var intervalDropdownExpanded by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+
+    val frequencies = listOf(1, 2, 3)
+    var frequencyDropdownExpanded by remember { mutableStateOf(false) }
+    var activeTimeIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Дозування: ${viewModel.dosage} ${viewModel.medicationForm.unit}",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Row {
-                IconButton(
-                    onClick = { if (viewModel.dosage > 1) viewModel.onDosageChange(viewModel.dosage - 1) }
-                ) {
-                    Icon(Icons.Rounded.Remove, contentDescription = "Менше")
-                }
-                IconButton(
-                    onClick = { viewModel.onDosageChange(viewModel.dosage + 1) }
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Більше")
-                }
-            }
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.SpaceBetween,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Text(
+//                text = "Дозування: ${viewModel.dosage} ${viewModel.medicationForm.unit}",
+//                style = MaterialTheme.typography.titleMedium
+//            )
+//            Row {
+//                IconButton(
+//                    onClick = { if (viewModel.dosage > 1) viewModel.onDosageChange(viewModel.dosage - 1) }
+//                ) {
+//                    Icon(Icons.Rounded.Remove, contentDescription = "Менше")
+//                }
+//                IconButton(
+//                    onClick = { viewModel.onDosageChange(viewModel.dosage + 1) }
+//                ) {
+//                    Icon(Icons.Rounded.Add, contentDescription = "Більше")
+//                }
+//            }
+//        }
 
         HorizontalDivider()
 
         ExposedDropdownMenuBox(
-            expanded = intervalDropdownExpanded,
-            onExpandedChange = { intervalDropdownExpanded = it }
+            expanded = frequencyDropdownExpanded,
+            onExpandedChange = { frequencyDropdownExpanded = it }
         ) {
             OutlinedTextField(
-                value = intervalLabel(viewModel.intervalHours),
+                value = "${viewModel.frequencyPerDay} раз(и) на день",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Частота прийому") },
                 trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = intervalDropdownExpanded)
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = frequencyDropdownExpanded)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor()
             )
             ExposedDropdownMenu(
-                expanded = intervalDropdownExpanded,
-                onDismissRequest = { intervalDropdownExpanded = false },
-                containerColor = MaterialTheme.colorScheme.surface
+                expanded = frequencyDropdownExpanded,
+                onDismissRequest = { frequencyDropdownExpanded = false }
             ) {
-                intervals.forEach { hours ->
+                frequencies.forEach { value ->
                     DropdownMenuItem(
-                        text = { Text(intervalLabel(hours)) },
+                        text = { Text("$value раз(и) на день") },
                         onClick = {
-                            viewModel.onIntervalChange(hours)
-                            intervalDropdownExpanded = false
+                            viewModel.onFrequencyChange(value)
+                            frequencyDropdownExpanded = false
                         }
                     )
                 }
@@ -322,28 +321,34 @@ private fun Step2Content(viewModel: CourseViewModel) {
 
         HorizontalDivider()
 
-        OutlinedTextField(
-            value = viewModel.startTime,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Час першого прийому") },
-            trailingIcon = {
-                IconButton(onClick = { showTimePicker = true }) {
-                    Icon(Icons.Rounded.Schedule, contentDescription = "Обрати час")
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
+        viewModel.intakeTimes.forEachIndexed { index, time ->
+            OutlinedTextField(
+                value = time,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Час прийому ${index + 1}") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = { activeTimeIndex = index }
+                    ) {
+                        Icon(
+                            Icons.Rounded.Schedule,
+                            contentDescription = "Обрати час"
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
-
-    if (showTimePicker) {
+    activeTimeIndex?.let { index ->
         TimePickerDialog(
-            initialTime = viewModel.startTime,
+            initialTime = viewModel.intakeTimes[index],
             onTimeSelected = { time ->
-                viewModel.onStartTimeChange(time)
-                showTimePicker = false
+                viewModel.onIntakeTimeChange(index, time)
+                activeTimeIndex = null
             },
-            onDismiss = { showTimePicker = false }
+            onDismiss = { activeTimeIndex = null }
         )
     }
 }

@@ -5,9 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalTime
-
 @Entity(
-    tableName = "intake_logs",
     foreignKeys = [
         ForeignKey(
             entity = Schedule::class,
@@ -18,12 +16,9 @@ import java.time.LocalTime
     ],
     indices = [Index("scheduleId")]
 )
-data class IntakeLog(
+data class IntakeTimeEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val scheduleId: Long,
-    val plannedDoseTime: LocalTime,
-    val actualDoseTime: LocalTime?,
-    val intakeDate: String,
-    val taken: Boolean
+    val time: String
 )

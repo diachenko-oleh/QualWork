@@ -28,7 +28,7 @@ class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
-    val doseTime = System.currentTimeMillis()
+
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
@@ -37,22 +37,25 @@ class NotificationWorker @AssistedInject constructor(
         val unit = inputData.getString(KEY_UNIT) ?: ""
         val endDate = inputData.getLong(KEY_END_DATE, -1L)
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
-        scheduleMissedCheck(scheduleId, doseTime)
+
+        val timeString = inputData.getString(KEY_TIME) ?: return Result.failure()
+
+        scheduleMissedCheck(scheduleId, timeString)
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
         try {
             Log.d("NOTIF_FLOW", "before notification scheduleId = $scheduleId")
-            showNotification(medicationName, dosage, unit, scheduleId)
+            showNotification(medicationName, dosage, unit, scheduleId,timeString)
             return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
         }
     }
-    private fun scheduleMissedCheck(scheduleId: Long, doseTime: Long) {
+    private fun scheduleMissedCheck(scheduleId: Long, time: String) {
         val inputData = workDataOf(
             "scheduleId" to scheduleId,
-            "doseTime" to doseTime
+            "time" to time
         )
 
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
@@ -68,7 +71,8 @@ class NotificationWorker @AssistedInject constructor(
         medicationName: String,
         dosage: Int,
         unit: String,
-        scheduleId: Long
+        scheduleId: Long,
+        timeString: String
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -86,7 +90,7 @@ class NotificationWorker @AssistedInject constructor(
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("openIntake", true)
             putExtra("scheduleId", scheduleId)
-            putExtra("doseTime", doseTime)
+            putExtra("time", timeString)
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
@@ -107,7 +111,8 @@ class NotificationWorker @AssistedInject constructor(
             .setContentIntent(pendingIntent)
             .build()
 
-        NotificationManagerCompat.from(context).notify(scheduleId.toInt(), notification)
+        val notificationId = scheduleId.toInt() * 100 + timeString.hashCode()
+        NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
 
     companion object {
@@ -117,5 +122,7 @@ class NotificationWorker @AssistedInject constructor(
         const val KEY_UNIT = "unit"
         const val KEY_END_DATE = "end_date"
         const val KEY_SCHEDULE_ID = "schedule_id"
+
+        const val KEY_TIME = "time"
     }
 }

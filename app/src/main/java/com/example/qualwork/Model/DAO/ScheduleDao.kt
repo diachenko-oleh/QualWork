@@ -17,13 +17,6 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules WHERE medicationId = :medicationId")
     fun getByMedication(medicationId: Long): Flow<List<Schedule>>
 
-    @Query("""
-        SELECT * FROM schedules 
-        WHERE (:today BETWEEN startDate AND COALESCE(endDate, 9999999999999))
-        ORDER BY startTime ASC
-    """)
-    fun getActiveSchedules(today: Long): Flow<List<Schedule>>
-
     @Update
     suspend fun update(schedule: Schedule)
 

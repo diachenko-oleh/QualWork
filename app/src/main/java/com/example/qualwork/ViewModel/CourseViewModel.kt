@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -42,14 +43,20 @@ class CourseViewModel @Inject constructor(
             val medication = courseData.medication
             val schedule = courseData.schedules.first()
 
+
             editingScheduleId = schedule.id
             medicationName = medication.name
             medicationForm = medication.form
-            intervalHours = schedule.intervalHours
-            startTime = schedule.startTime
             dosage = schedule.dosage
             startDate = schedule.startDate
             endDate = schedule.endDate
+            medAmount = schedule.medAmount
+
+            val times = medRepository.getIntakeTimes(schedule.id)
+
+            intakeTimes = times.map { formatTime(it) }
+
+            frequencyPerDay = intakeTimes.size
         }
     }
 
@@ -82,9 +89,9 @@ class CourseViewModel @Inject constructor(
         private set
 
     //збереження графіку/частоти
-    var intervalHours by mutableIntStateOf(8)
+    var frequencyPerDay by mutableIntStateOf(1)
         private set
-    var startTime by mutableStateOf("08:00")
+    var intakeTimes by mutableStateOf(List(1) { "08:00" })
         private set
     var dosage by mutableIntStateOf(1)
         private set
@@ -99,6 +106,9 @@ class CourseViewModel @Inject constructor(
     var duration by mutableStateOf<CourseDuration?>(null)
         private set
 
+    var medAmount by mutableStateOf<Int?>(null)
+        private set
+
 
     var isSaving by mutableStateOf(false)
         private set
@@ -107,9 +117,18 @@ class CourseViewModel @Inject constructor(
 
     fun onNameChange(value: String) { medicationName = value }
     fun onFormChange(value: MedicationForm) { medicationForm = value }
-    fun onIntervalChange(value: Int) { intervalHours = value }
-    fun onStartTimeChange(value: String) { startTime = value }
-    fun onDosageChange(value: Int) { dosage = value }
+    fun onFrequencyChange(value: Int) {
+        frequencyPerDay = value
+
+        intakeTimes = List(value) { index ->
+            intakeTimes.getOrNull(index) ?: "08:00"
+        }
+    }
+    fun onIntakeTimeChange(index: Int, time: String) {
+        intakeTimes = intakeTimes.toMutableList().also {
+            it[index] = time
+        }
+    }
     fun onStartDateChange(date: Long) {
         startDate = date
         recalculateEndDate()
@@ -126,6 +145,9 @@ class CourseViewModel @Inject constructor(
         } else {
             recalculateEndDate()
         }
+    }
+    fun onMedAmountChange(value: Int?) {
+        medAmount = value
     }
 
     private fun recalculateEndDate() {
@@ -160,16 +182,17 @@ class CourseViewModel @Inject constructor(
         viewModelScope.launch {
             isSaving = true
             try {
+                val parsedTimes = intakeTimes.map { LocalTime.parse(it) }
                 val scheduleId = if (editingScheduleId == null) {
                     medRepository.saveCourse(
                         name = medicationName.trim(),
                         form = medicationForm,
                         startDate = startDate,
                         endDate = endDate,
-                        startTime = startTime,
-                        intervalHours = intervalHours,
                         dosage = dosage,
-                        userId = userId
+                        userId = userId,
+                        medAmount = medAmount,
+                        intakeTimes = parsedTimes
                     )
                 } else {
                     medRepository.updateCourse(
@@ -178,22 +201,22 @@ class CourseViewModel @Inject constructor(
                         form = medicationForm,
                         startDate = startDate,
                         endDate = endDate,
-                        startTime = startTime,
-                        intervalHours = intervalHours,
-                        dosage = dosage
+                        dosage = dosage,
+                        medAmount = medAmount,
+                        intakeTimes = parsedTimes
                     )
+
                     editingScheduleId!!
                 }
-
                 notificationScheduler.scheduleNotifications(
                     scheduleId = scheduleId,
                     medicationName = medicationName.trim(),
                     dosage = dosage,
                     unit = medicationForm.unit,
-                    startTime = startTime,
-                    intervalHours = intervalHours,
                     startDate = startDate,
-                    endDate = endDate
+                    endDate = endDate,
+                    medAmount = medAmount,
+                    intakeTimes = parsedTimes
                 )
                 savedSuccessfully = true
             } catch (e: Exception) {

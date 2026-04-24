@@ -21,7 +21,7 @@ fun RootNavHost(
     pendingDoseTime: Long?,
     onIntakeHandled: () -> Unit
 ) {
-    Log.d("NOTIF_FLOW", "RootNavHost intakeScheduleId = $pendingIntakeId")
+    //Log.d("NOTIF_FLOW", "RootNavHost intakeScheduleId = $pendingIntakeId")
     val navController = rememberNavController()
 
     LaunchedEffect(pendingIntakeId, pendingDoseTime) {

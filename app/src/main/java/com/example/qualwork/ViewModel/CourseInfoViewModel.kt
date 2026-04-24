@@ -25,7 +25,7 @@ class CourseInfoViewModel @Inject constructor(
 
     var nextDoseTimes by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
-
+    /*
     init {
         viewModelScope.launch {
             repository.getAllWithSchedules().collect { courseList ->
@@ -64,9 +64,5 @@ class CourseInfoViewModel @Inject constructor(
         } else {
             lastLog.doseTime + intervalMs
         }
-    }
-
-    private fun formatDoseTime(timestamp: Long): String =
-        SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
-            .format(Date(timestamp))
+    }*/
 }

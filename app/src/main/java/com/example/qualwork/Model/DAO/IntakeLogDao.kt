@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.qualwork.Model.Entity.IntakeLog
+import com.example.qualwork.Model.Entity.IntakeTimeEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -42,28 +43,24 @@ interface IntakeLogDao {
 
 
     // Get all logs
-    @Query("SELECT * FROM intake_logs ORDER BY intakeTime DESC")
+    @Query("SELECT * FROM intake_logs ORDER BY actualDoseTime DESC")
     fun getAll(): Flow<List<IntakeLog>>
 
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId")
     fun getByScheduleId(scheduleId: Long): Flow<List<IntakeLog>>
 
-    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND doseTime = :doseTime LIMIT 1")
-    suspend fun getByScheduleAndDoseTime(scheduleId: Long, doseTime: Long): IntakeLog?
-
-    @Query("""
-        SELECT * FROM intake_logs
-        WHERE intakeTime BETWEEN :from AND :to
-        ORDER BY intakeTime DESC
-    """)
-    fun getByTimeRange(from: Long, to: Long): Flow<List<IntakeLog>>
-
     @Query("""
         SELECT * FROM intake_logs
         WHERE scheduleId = :scheduleId AND taken = :taken
-        ORDER BY intakeTime DESC
+        ORDER BY actualDoseTime DESC
     """)
     fun getByTakenStatus(scheduleId: Long, taken: Boolean): Flow<List<IntakeLog>>
+
+    @Query("""SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND intakeDate = :date""")
+    suspend fun getTodayLogs(
+        scheduleId: Long,
+        date: String
+    ): List<IntakeLog>
 
 
     // Count statistics
@@ -79,6 +76,6 @@ interface IntakeLogDao {
     """)
     suspend fun countMissed(scheduleId: Long):Int
 
-    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY doseTime DESC LIMIT 1")
+    @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY actualDoseTime DESC LIMIT 1")
     suspend fun getLastLog(scheduleId: Long): IntakeLog?
 }

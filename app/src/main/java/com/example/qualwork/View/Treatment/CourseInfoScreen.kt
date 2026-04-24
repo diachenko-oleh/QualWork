@@ -44,6 +44,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
+import com.example.qualwork.ViewModel.formatDate
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseInfoScreen(
@@ -145,8 +147,6 @@ fun CourseInfoScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     HorizontalDivider()
-                    InfoRow("Час першого прийому", schedule.startTime)
-                    InfoRow("Інтервал", intervalLabel(schedule.intervalHours))
                     InfoRow("Дозування", "${schedule.dosage} ${medication.form.unit}")
                 }
             }

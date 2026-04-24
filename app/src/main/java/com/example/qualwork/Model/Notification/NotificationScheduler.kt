@@ -7,6 +7,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -21,62 +26,55 @@ class NotificationScheduler @Inject constructor(
         medicationName: String,
         dosage: Int,
         unit: String,
-        startTime: String,
-        intervalHours: Int,
+        intakeTimes: List<LocalTime>,
         startDate: Long,
-        endDate: Long?
+        endDate: Long?,
+        medAmount: Int?
     ) {
         cancelNotifications(scheduleId)
 
-        val inputData = workDataOf(
-            NotificationWorker.KEY_MEDICATION_NAME to medicationName,
-            NotificationWorker.KEY_DOSAGE to dosage,
-            NotificationWorker.KEY_UNIT to unit,
-            NotificationWorker.KEY_END_DATE to (endDate ?: -1L),
-            NotificationWorker.KEY_SCHEDULE_ID to scheduleId
-        )
+        intakeTimes.forEach { time ->
+            val delay = calculateInitialDelay(time, startDate)
 
-        val workRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
-            repeatInterval = intervalHours.toLong(),
-            repeatIntervalTimeUnit = TimeUnit.HOURS
-        )
-            .setInitialDelay(calculateInitialDelay(startTime, startDate), TimeUnit.MILLISECONDS)
-            .setInputData(inputData)
-            .addTag(scheduleId.toString())
-            .build()
+            val inputData = workDataOf(
+                NotificationWorker.KEY_MEDICATION_NAME to medicationName,
+                NotificationWorker.KEY_DOSAGE to dosage,
+                NotificationWorker.KEY_UNIT to unit,
+                NotificationWorker.KEY_END_DATE to (endDate ?: -1L),
+                NotificationWorker.KEY_SCHEDULE_ID to scheduleId,
+                NotificationWorker.KEY_TIME to time.toString()
+            )
 
-        workManager.enqueueUniquePeriodicWork(
-            scheduleId.toString(),
-            ExistingPeriodicWorkPolicy.REPLACE,
-            workRequest
-        )
+            val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                .setInputData(inputData)
+                .addTag(scheduleId.toString())
+                .addTag("${scheduleId}_${time}")
+                .build()
 
+            workManager.enqueue(workRequest)
+        }
     }
     fun cancelNotifications(scheduleId: Long) {
-        workManager.cancelUniqueWork(scheduleId.toString())
+        workManager.cancelAllWorkByTag(scheduleId.toString())
     }
 
-    private fun calculateInitialDelay(startTime: String, startDate: Long): Long {
-        val now = System.currentTimeMillis()
+    private fun calculateInitialDelay(time: LocalTime, startDate: Long): Long {
+        val now = ZonedDateTime.now()
+        val zone = ZoneId.systemDefault()
 
-        //час першого прийому
-        val (hours, minutes) = startTime.split(":").map { it.toInt() }
+        var nextTrigger = Instant.ofEpochMilli(startDate)
+            .atZone(zone)
+            .withHour(time.hour)
+            .withMinute(time.minute)
+            .withSecond(0)
+            .withNano(0)
 
-        //перший прийом
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = maxOf(now, startDate)
-            set(Calendar.HOUR_OF_DAY, hours)
-            set(Calendar.MINUTE, minutes)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        if (nextTrigger.isBefore(now)) {
+            nextTrigger = nextTrigger.plusDays(1)
         }
 
-        // якщо час вже минув — переносимо на завтра
-        if (calendar.timeInMillis <= now) {
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-        }
-
-        return calendar.timeInMillis - now
+        return Duration.between(now, nextTrigger).toMillis()
     }
 
     fun scheduleDelayed(

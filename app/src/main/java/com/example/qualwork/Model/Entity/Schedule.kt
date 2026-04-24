@@ -29,8 +29,7 @@ data class Schedule(
     val medicationId: Long,
     val startDate: Long,
     val endDate: Long?,
-    val startTime: String,
-    val intervalHours: Int,
     val dosage: Int,
-    val userId: String
+    val userId: String,
+    val medAmount: Int?
 )

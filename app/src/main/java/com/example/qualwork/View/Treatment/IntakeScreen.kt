@@ -36,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.IntakeViewModel
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.util.Date
 import java.util.Locale
 
@@ -82,7 +83,7 @@ fun IntakeScreen(
 
     val formattedDoseTime = remember(viewModel.nextDoseTime) {
         SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
-            .format(Date(viewModel.nextDoseTime))
+            .format(viewModel.nextDoseTime)
     }
 
     QualWorkTheme {
@@ -128,7 +129,7 @@ fun IntakeScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
-                    onClick = { viewModel.takeMedication() },
+                    onClick = { viewModel.takeMedication(LocalTime.now()) },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -163,7 +164,7 @@ fun IntakeScreen(
 //                }
 
                 TextButton(
-                    onClick = { viewModel.skipMedication() },
+                    onClick = { viewModel.skipMedication(LocalTime.now()) },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()

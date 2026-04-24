@@ -2,6 +2,7 @@ package com.example.qualwork.Model
 import android.content.Context
 import com.example.qualwork.Model.DAO.ConnectionDao
 import com.example.qualwork.Model.DAO.IntakeLogDao
+import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.DAO.UserDao
@@ -34,6 +35,8 @@ object DatabaseModule {
     @Provides
     fun provideScheduleDao(db: AppDatabase): ScheduleDao = db.scheduleDao()
     @Provides
+    fun provideIntakeTimeDao(db: AppDatabase): IntakeTimeDao = db.intakeTimeDao()
+    @Provides
     @Singleton
     fun provideUserPreferences(
         @ApplicationContext context: Context
@@ -47,14 +50,14 @@ object DatabaseModule {
     @Singleton
     fun provideMedicationRepository(
         medicationDao: MedicationDao,
+        intakeTimeDao: IntakeTimeDao,
         scheduleDao: ScheduleDao
-    ): MedicationRepository = MedicationRepository(medicationDao, scheduleDao)
+    ): MedicationRepository = MedicationRepository(medicationDao, intakeTimeDao, scheduleDao)
     @Provides
     @Singleton
     fun provideNotificationScheduler(
         @ApplicationContext context: Context
     ): NotificationScheduler = NotificationScheduler(context)
-
     @Provides
     @Singleton
     fun provideIntakeLogRepository(

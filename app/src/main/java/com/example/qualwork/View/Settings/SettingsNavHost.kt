@@ -14,7 +14,6 @@ import com.example.qualwork.ViewModel.UserViewModel
 fun SettingsScreen() {
     QualWorkTheme {
         val navController = rememberNavController()
-        val userViewModel: UserViewModel = hiltViewModel()
         NavHost(
             navController = navController,
             startDestination = SettingsTabNavigator.SettingsMain.route,
@@ -29,7 +28,6 @@ fun SettingsScreen() {
             composable(SettingsTabNavigator.Account.route) {
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
-                    //viewModel = userViewModel
                 )
             }
         }
