@@ -35,11 +35,11 @@ import javax.inject.Inject
 @HiltViewModel
 class CourseViewModel @Inject constructor(
     private val medRepository: MedicationRepository,
-    private val intakeTimeDao: IntakeTimeDao,
-    private val intakeLogDao: IntakeLogDao,
     private val intakeRepository: IntakeLogRepository,
-    private val userPreferences: UserPreferences,
-    private val notificationScheduler: NotificationScheduler
+    private val intakeLogDao: IntakeLogDao,
+    private val intakeTimeDao: IntakeTimeDao,
+    private val notificationScheduler: NotificationScheduler,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
     private var editingScheduleId: Long? = null
 
@@ -267,7 +267,6 @@ class CourseViewModel @Inject constructor(
 
     var activeIntakeTime by mutableStateOf<LocalTime?>(null)
         private set
-
     fun startWatchingActiveIntake(scheduleId: Long) {
         viewModelScope.launch {
             while (true) {
@@ -276,6 +275,7 @@ class CourseViewModel @Inject constructor(
             }
         }
     }
+
     private suspend fun findActiveIntakeTime(scheduleId: Long): LocalTime? {
         val times = intakeTimeDao.getBySchedule(scheduleId)
         val now = LocalTime.now()
@@ -287,7 +287,7 @@ class CourseViewModel @Inject constructor(
             .map { LocalTime.parse(it.time) }
             .firstOrNull { time ->
                 val diff = Duration.between(time, now).toMinutes()
-                diff in 0..10 && time !in loggedTimes
+                diff in 0..9 && time !in loggedTimes
             }
     }
     fun markExpiredAsSkipped(scheduleId: Long) {
@@ -317,6 +317,9 @@ class CourseViewModel @Inject constructor(
             activeIntakeTime = null
         }
     }
+
+
+
     enum class CourseDuration(val label: String) {
         WEEK_1("1 тиждень"),
         WEEK_2("2 тижні"),

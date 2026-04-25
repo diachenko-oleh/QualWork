@@ -8,20 +8,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
+import com.example.qualwork.Model.Notification.NotificationScheduler
+import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
+import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class CourseInfoViewModel @Inject constructor(
-    private val repository: MedicationRepository,
+    private val medRepository: MedicationRepository,
+    private val intakeRepository: IntakeLogRepository,
     private val intakeLogDao: IntakeLogDao,
-    private val intakeTimeDao: IntakeTimeDao
+    private val intakeTimeDao: IntakeTimeDao,
+    private val notificationScheduler: NotificationScheduler,
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
     var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
@@ -30,11 +35,10 @@ class CourseInfoViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             combine(
-                repository.getAllWithSchedules(),
+                medRepository.getAllWithSchedules(),
                 intakeLogDao.observeAll()
-            ){courses, _ ->
-                courses
-            }.collect { courseList ->
+            ){courses, _ -> courses}.collect {
+            courseList ->
             val result = mutableMapOf<Long, String>()
 
             courseList.forEach { medicationWithSchedules ->
@@ -53,7 +57,6 @@ class CourseInfoViewModel @Inject constructor(
                     } ?: "—"
                 }
             }
-
             nextDoseTime = result
             }
         }

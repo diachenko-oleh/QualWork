@@ -70,7 +70,6 @@ fun RootNavHost(
         }
 
         composable(RootNavigator.SplashScreen.route) {
-            //Log.d("NAV", "SplashScreen entered")
             SplashScreen(
                 onNavigateToHome = {
                     navController.navigate(RootNavigator.Home.route) {
@@ -115,8 +114,10 @@ fun RootNavHost(
                 onEditClick = { medicationId ->
                     navController.navigate(TreatTabNavigator.NewCourse.createRoute(medicationId))
                 },
-                onIntakeClick = { scheduleId ->
-                    navController.navigate(TreatTabNavigator.Intake.createRoute(scheduleId, doseTime))
+                onIntakeClick = { scheduleId, doseTime ->
+                    navController.navigate(
+                        TreatTabNavigator.Intake.createRoute(scheduleId, doseTime)
+                    )
                 }
             )
         }
