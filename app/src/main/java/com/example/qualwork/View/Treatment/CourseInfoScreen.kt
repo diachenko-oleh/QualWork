@@ -46,6 +46,9 @@ import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.LaunchedEffect
 import com.example.qualwork.ViewModel.formatDate
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +56,15 @@ fun CourseInfoScreen(
     courseId: Long,
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit,
-    onIntakeClick: (Long) -> Unit,
+    onIntakeClick: (Long, Long) -> Unit,
     viewModel: CourseViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+        ?: return
     val schedule = courseData.schedules.first()
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     val stats by viewModel
         .getStats(courseId)
         .collectAsState(initial = emptyList())
@@ -229,12 +234,29 @@ fun CourseInfoScreen(
                 )
             }
 
-            Button(
-                onClick = { onIntakeClick(schedule.id) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Записати прийом")
+
+            activeIntakeTime?.let { time ->
+                val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
+
+                Button(
+                    onClick = {
+                        val doseTimeMillis = LocalDate.now()
+                            .atTime(time)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                        onIntakeClick(schedule.id, doseTimeMillis)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Записати прийом за $formattedTime")
+                }
+            } ?: run {
+                LaunchedEffect(Unit) {
+                    viewModel.markExpiredAsSkipped(schedule.id)
+                }
             }
+
         }
     }
 }
