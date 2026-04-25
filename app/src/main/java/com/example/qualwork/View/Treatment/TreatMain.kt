@@ -58,7 +58,7 @@ fun TreatMainPage(
     courseInfoViewModel: CourseInfoViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
-    val nextDoseTimes = courseInfoViewModel.nextDoseTimes
+    val nextDoseTimes = courseInfoViewModel.nextDoseTime
 
     QualWorkTheme {
         Scaffold(
@@ -169,7 +169,6 @@ fun CourseCard(
 
            HorizontalDivider()
 
-            // час наступного прийому
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -181,8 +180,8 @@ fun CourseCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = nextDoseTime?.let { "Наступний прийом: $it" } ?: "Розраховується...",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = nextDoseTime?.let { "Наступний прийом: $it" } ?: "",
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
             }

@@ -32,21 +32,24 @@ class NotificationWorker @AssistedInject constructor(
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
+        Log.d("WORK_DEBUG", "doWork STARTED")
         val medicationName = inputData.getString(KEY_MEDICATION_NAME) ?: return Result.failure()
         val dosage = inputData.getInt(KEY_DOSAGE, 1)
         val unit = inputData.getString(KEY_UNIT) ?: ""
         val endDate = inputData.getLong(KEY_END_DATE, -1L)
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
-
         val timeString = inputData.getString(KEY_TIME) ?: return Result.failure()
 
+        Log.d("WORK_DEBUG", "endDate = $endDate, now = ${System.currentTimeMillis()}")
         scheduleMissedCheck(scheduleId, timeString)
+
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
         try {
-            Log.d("NOTIF_FLOW", "before notification scheduleId = $scheduleId")
-            showNotification(medicationName, dosage, unit, scheduleId,timeString)
+            Log.d("WORK_DEBUG", "Before showNotification()")
+            showNotification(medicationName, dosage, unit, scheduleId, timeString)
+            Log.d("WORK_DEBUG", "Notification shown")
             return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
@@ -122,7 +125,6 @@ class NotificationWorker @AssistedInject constructor(
         const val KEY_UNIT = "unit"
         const val KEY_END_DATE = "end_date"
         const val KEY_SCHEDULE_ID = "schedule_id"
-
         const val KEY_TIME = "time"
     }
 }

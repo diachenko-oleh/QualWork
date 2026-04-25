@@ -6,63 +6,80 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.DAO.IntakeLogDao
-import com.example.qualwork.Model.Entity.IntakeLog
-import com.example.qualwork.Model.Entity.Schedule
+import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Repository.MedicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class CourseInfoViewModel @Inject constructor(
     private val repository: MedicationRepository,
-    private val intakeLogDao: IntakeLogDao
+    private val intakeLogDao: IntakeLogDao,
+    private val intakeTimeDao: IntakeTimeDao
 ) : ViewModel() {
 
-    var nextDoseTimes by mutableStateOf<Map<Long, String>>(emptyMap())
+    var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
-    /*
+
     init {
         viewModelScope.launch {
             repository.getAllWithSchedules().collect { courseList ->
                 val result = mutableMapOf<Long, String>()
+
                 courseList.forEach { medicationWithSchedules ->
                     medicationWithSchedules.schedules.forEach { schedule ->
-                        val lastLog = intakeLogDao.getLastLog(schedule.id)
-                        val nextDose = calculateNextDose(schedule, lastLog)
-                        result[schedule.id] = formatDoseTime(nextDose)
+
+                        val nextDose = calculateNextDose(schedule.id)
+
+                        result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
+                            val formattedTime = time.toString().substring(0, 5)
+
+                            if (isTomorrow) {
+                                "$formattedTime (завтра)"
+                            } else {
+                                formattedTime
+                            }
+                        } ?: "—"
                     }
                 }
-                nextDoseTimes = result
+
+                nextDoseTime = result
             }
         }
     }
 
-    private fun calculateNextDose(schedule: Schedule, lastLog: IntakeLog?): Long {
-        val now = System.currentTimeMillis()
-        val intervalMs = schedule.intervalHours * 3600000L
+    private suspend fun calculateNextDose(scheduleId: Long): Pair<LocalTime, Boolean>? {
+        val times = intakeTimeDao.getBySchedule(scheduleId)
+        if (times.isEmpty()) return null
 
-        val (hours, minutes) = schedule.startTime.split(":").map { it.toInt() }
-        val firstDose = Calendar.getInstance().apply {
-            timeInMillis = schedule.startDate
-            set(Calendar.HOUR_OF_DAY, hours)
-            set(Calendar.MINUTE, minutes)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        val today = LocalDate.now().toString()
+        val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
+        val nowTime = LocalTime.now()
+        val nowDate = LocalDate.now()
 
-        return if (lastLog == null) {
-            if (now < firstDose) firstDose
-            else {
-                val dosesPassed = (now - firstDose) / intervalMs
-                firstDose + dosesPassed * intervalMs
-            }
-        } else {
-            lastLog.doseTime + intervalMs
+        val takenTimes = logsToday
+            .filter { it.taken }
+            .map { it.plannedDoseTime.toLocalTime()  }
+            .toSet()
+
+        val sortedTimes = times
+            .map { LocalTime.parse(it.time) }
+            .sorted()
+
+        val nextToday = sortedTimes.firstOrNull { time ->
+            time.isAfter(nowTime) && time !in takenTimes
         }
-    }*/
+
+        if (nextToday != null) {
+            return nextToday to false
+        }
+
+        val tomorrowTime = sortedTimes.first()
+
+        return tomorrowTime to true
+    }
 }

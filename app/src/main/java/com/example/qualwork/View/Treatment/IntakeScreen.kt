@@ -14,14 +14,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Medication
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,10 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.IntakeViewModel
-import java.text.SimpleDateFormat
+import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.Date
-import java.util.Locale
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun IntakeScreen(
@@ -58,7 +54,9 @@ fun IntakeScreen(
     val medication = viewModel.medication
     val schedule = viewModel.schedule
 
-    val isExpired = System.currentTimeMillis() > doseTime + 30 * 60 * 1000
+    val isExpired = viewModel.nextDoseTime?.let {
+        it.plusMinutes(30).isBefore(LocalTime.now())
+    } ?: false
 
     if (isExpired) {
         Text("Час прийому минув")
@@ -74,18 +72,9 @@ fun IntakeScreen(
         return
     }
 
-    if (medication == null || schedule == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
     val formattedDoseTime = remember(viewModel.nextDoseTime) {
-        SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault())
-            .format(viewModel.nextDoseTime)
+        viewModel.nextDoseTime?.format(DateTimeFormatter.ofPattern("HH:mm"))
     }
-
     QualWorkTheme {
         Scaffold { padding ->
             Column(
@@ -145,23 +134,6 @@ fun IntakeScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
-
-//                OutlinedButton(
-//                    onClick = {
-//                        viewModel.snoozeMedication()
-//                    },
-//                    enabled = !viewModel.isLoading,
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .height(56.dp)
-//                ) {
-//                    Icon(Icons.Rounded.Schedule, contentDescription = null)
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Text(
-//                        text = "Відкласти на 30 хв",
-//                        style = MaterialTheme.typography.titleMedium
-//                    )
-//                }
 
                 TextButton(
                     onClick = { viewModel.skipMedication(LocalTime.now()) },

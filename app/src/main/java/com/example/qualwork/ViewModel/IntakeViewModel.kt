@@ -1,7 +1,6 @@
 package com.example.qualwork.ViewModel
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -16,12 +15,9 @@ import com.example.qualwork.Model.Repository.MedicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -103,7 +99,7 @@ class IntakeViewModel @Inject constructor(
 
         val now = LocalTime.now()
 
-        val taken = logsToday.map { it.plannedDoseTime }.toSet()
+        val taken = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
 
         val sorted = times.map { LocalTime.parse(it.time) }
 

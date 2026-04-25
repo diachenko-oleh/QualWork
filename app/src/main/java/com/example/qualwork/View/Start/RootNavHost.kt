@@ -21,7 +21,6 @@ fun RootNavHost(
     pendingDoseTime: Long?,
     onIntakeHandled: () -> Unit
 ) {
-    //Log.d("NOTIF_FLOW", "RootNavHost intakeScheduleId = $pendingIntakeId")
     val navController = rememberNavController()
 
     LaunchedEffect(pendingIntakeId, pendingDoseTime) {
@@ -31,7 +30,7 @@ fun RootNavHost(
         if (id != null && doseTime != null) {
 
             val now = System.currentTimeMillis()
-            val isValid = now <= doseTime + 30 * 60 * 1000 // 30 хв
+            val isValid = now <= doseTime + 30 * 60 * 1000
 
             if (isValid) {
                 navController.navigate(RootNavigator.Home.route) {

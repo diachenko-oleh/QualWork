@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -239,15 +240,14 @@ class CourseViewModel @Inject constructor(
     fun getStats(scheduleId: Long): Flow<List<DayIntakeStat>> {
         return intakeRepository.getLogsForSchedule(scheduleId)
             .map { logs ->
-
-                logs.groupBy { it.intakeDate }
+                logs.groupBy { it.plannedDoseTime.toLocalDate() }
                     .map { (date, items) ->
 
                         val total = items.size
                         val taken = items.count { it.taken }
 
                         DayIntakeStat(
-                            date = date,
+                            date = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
                             total = total,
                             taken = taken
                         )

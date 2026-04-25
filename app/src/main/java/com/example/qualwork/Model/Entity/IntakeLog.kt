@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 @Entity(
@@ -22,8 +23,7 @@ data class IntakeLog(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val scheduleId: Long,
-    val plannedDoseTime: LocalTime,
-    val actualDoseTime: LocalTime?,
-    val intakeDate: String,
+    val plannedDoseTime: LocalDateTime,
+    val actualDoseTime: LocalDateTime?,
     val taken: Boolean
 )

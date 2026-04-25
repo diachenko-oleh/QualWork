@@ -1,6 +1,7 @@
 package com.example.qualwork.Model.Notification
 
 import android.content.Context
+import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -84,12 +85,15 @@ class NotificationScheduler @Inject constructor(
         unit: String,
         scheduleId:Long
     ) {
+        Log.d("WORK_DEBUG", "scheduleDelayed called")
+        Log.d("WORK_DEBUG", "scheduleId = $scheduleId, delay = $delayMinutes")
         val inputData = workDataOf(
             NotificationWorker.KEY_MEDICATION_NAME to medicationName,
             NotificationWorker.KEY_DOSAGE to dosage,
             NotificationWorker.KEY_UNIT to unit,
             NotificationWorker.KEY_END_DATE to -1L,
-            NotificationWorker.KEY_SCHEDULE_ID to scheduleId
+            NotificationWorker.KEY_SCHEDULE_ID to scheduleId,
+            NotificationWorker.KEY_TIME to "08:00"
         )
 
         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
@@ -97,7 +101,8 @@ class NotificationScheduler @Inject constructor(
             .setInputData(inputData)
             .addTag("test_notification")
             .build()
-
+        Log.d("WORK_DEBUG", "WorkRequest created: $workRequest")
+        Log.d("WORK_DEBUG", "Enqueuing work...")
         workManager.enqueue(workRequest)
     }
 }
