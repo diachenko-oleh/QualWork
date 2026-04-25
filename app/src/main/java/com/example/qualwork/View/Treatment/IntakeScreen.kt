@@ -32,8 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.IntakeViewModel
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -43,8 +45,11 @@ fun IntakeScreen(
     onActionCompleted: () -> Unit,
     viewModel: IntakeViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(scheduleId) {
-        viewModel.loadSchedule(scheduleId)
+    LaunchedEffect(scheduleId, doseTime) {
+        val localDoseTime = Instant.ofEpochMilli(doseTime)
+            .atZone(ZoneId.systemDefault())
+            .toLocalTime()
+        viewModel.loadSchedule(scheduleId, localDoseTime)
     }
 
     LaunchedEffect(viewModel.actionCompleted) {
@@ -54,14 +59,7 @@ fun IntakeScreen(
     val medication = viewModel.medication
     val schedule = viewModel.schedule
 
-    val isExpired = viewModel.nextDoseTime?.let {
-        it.plusMinutes(30).isBefore(LocalTime.now())
-    } ?: false
 
-    if (isExpired) {
-        Text("Час прийому минув")
-        return
-    }
     if (medication == null || schedule == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -72,7 +70,7 @@ fun IntakeScreen(
         return
     }
 
-    val formattedDoseTime = remember(viewModel.nextDoseTime) {
+        val formattedDoseTime = remember(viewModel.nextDoseTime) {
         viewModel.nextDoseTime?.format(DateTimeFormatter.ofPattern("HH:mm"))
     }
     QualWorkTheme {
@@ -118,7 +116,7 @@ fun IntakeScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
-                    onClick = { viewModel.takeMedication(LocalTime.now()) },
+                    onClick = { viewModel.takeMedication() },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -136,7 +134,7 @@ fun IntakeScreen(
                 }
 
                 TextButton(
-                    onClick = { viewModel.skipMedication(LocalTime.now()) },
+                    onClick = { viewModel.skipMedication() },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()

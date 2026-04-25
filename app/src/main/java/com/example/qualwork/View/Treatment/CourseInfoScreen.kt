@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.LaunchedEffect
 import com.example.qualwork.ViewModel.formatDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,9 +59,14 @@ fun CourseInfoScreen(
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val schedule = courseData.schedules.first()
     val stats by viewModel
         .getStats(courseId)
         .collectAsState(initial = emptyList())
+    LaunchedEffect(schedule.id) {
+        viewModel.startWatchingActiveIntake(schedule.id)
+    }
+    val activeIntakeTime = viewModel.activeIntakeTime
 
     Scaffold(
         topBar = {
@@ -222,6 +228,7 @@ fun CourseInfoScreen(
                     }
                 )
             }
+
             Button(
                 onClick = { onIntakeClick(schedule.id) },
                 modifier = Modifier.fillMaxWidth()

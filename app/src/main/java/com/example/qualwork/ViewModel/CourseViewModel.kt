@@ -6,7 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.qualwork.Model.DAO.IntakeLogDao
+import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Entity.DayIntakeStat
+import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
@@ -14,6 +17,7 @@ import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +25,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -29,6 +35,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CourseViewModel @Inject constructor(
     private val medRepository: MedicationRepository,
+    private val intakeTimeDao: IntakeTimeDao,
+    private val intakeLogDao: IntakeLogDao,
     private val intakeRepository: IntakeLogRepository,
     private val userPreferences: UserPreferences,
     private val notificationScheduler: NotificationScheduler
@@ -229,6 +237,7 @@ class CourseViewModel @Inject constructor(
     }
 
     fun getScheduler(): NotificationScheduler = notificationScheduler
+
     val courses: StateFlow<List<MedicationWithSchedules>> =
         medRepository.getAllWithSchedules()
             .stateIn(
@@ -256,7 +265,58 @@ class CourseViewModel @Inject constructor(
             }
     }
 
+    var activeIntakeTime by mutableStateOf<LocalTime?>(null)
+        private set
 
+    fun startWatchingActiveIntake(scheduleId: Long) {
+        viewModelScope.launch {
+            while (true) {
+                activeIntakeTime = findActiveIntakeTime(scheduleId)
+                delay(30_000)
+            }
+        }
+    }
+    private suspend fun findActiveIntakeTime(scheduleId: Long): LocalTime? {
+        val times = intakeTimeDao.getBySchedule(scheduleId)
+        val now = LocalTime.now()
+        val today = LocalDate.now().toString()
+        val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
+        val loggedTimes = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
+
+        return times
+            .map { LocalTime.parse(it.time) }
+            .firstOrNull { time ->
+                val diff = Duration.between(time, now).toMinutes()
+                diff in 0..10 && time !in loggedTimes
+            }
+    }
+    fun markExpiredAsSkipped(scheduleId: Long) {
+        viewModelScope.launch {
+            val times = intakeTimeDao.getBySchedule(scheduleId)
+            val now = LocalTime.now()
+            val today = LocalDate.now().toString()
+            val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
+            val loggedTimes = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
+
+            times
+                .map { LocalTime.parse(it.time) }
+                .filter { time ->
+                    val diff = Duration.between(time, now).toMinutes()
+                    diff > 10 && time !in loggedTimes
+                }
+                .forEach { time ->
+                    intakeLogDao.insert(
+                        IntakeLog(
+                            scheduleId = scheduleId,
+                            plannedDoseTime = LocalDate.now().atTime(time),
+                            actualDoseTime = null,
+                            taken = false
+                        )
+                    )
+                }
+            activeIntakeTime = null
+        }
+    }
     enum class CourseDuration(val label: String) {
         WEEK_1("1 тиждень"),
         WEEK_2("2 тижні"),

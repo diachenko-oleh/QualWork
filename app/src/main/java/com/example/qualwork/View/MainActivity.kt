@@ -42,6 +42,9 @@ import com.example.qualwork.View.Start.RootNavHost
 import com.example.qualwork.View.Treatment.TreatmentScreen
 import com.example.qualwork.View.theme.QualWorkTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -88,12 +91,17 @@ class MainActivity : ComponentActivity() {
         //Log.d("NOTIF_FLOW", "handleIntent called")
 
         val id = intent.getLongExtra("scheduleId", -1L)
-        val time = intent.getLongExtra("doseTime", -1L)
+        val timeString = intent.getStringExtra("time")
 
-        if (id != -1L) {
+        Log.d("INTAKE_DEBUG", "handleIntent: id=$id, timeString=$timeString")
+
+        if (id != -1L && timeString != null) {
+            val time = LocalTime.parse(timeString)
+            val doseDateTime = LocalDate.now().atTime(time)
+            val epochMilli = doseDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            Log.d("INTAKE_DEBUG", "Converted: LocalTime=$time, epochMilli=$epochMilli")
             intakeScheduleId = id
-            doseTime = time
-            //Log.d("NOTIF_FLOW", "scheduleId received = $id")
+            doseTime = epochMilli
         }
     }
 }

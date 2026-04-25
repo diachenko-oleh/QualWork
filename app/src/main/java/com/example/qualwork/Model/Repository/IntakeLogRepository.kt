@@ -1,5 +1,6 @@
 package com.example.qualwork.Model.Repository
 
+import android.util.Log
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.Schedule
@@ -17,17 +18,20 @@ class IntakeLogRepository @Inject constructor(
 ) {
     suspend fun logIntake(
         schedule: Schedule,
-        intakeTime: LocalTime,
+        plannedTime: LocalTime,
+        actualTime: LocalTime?,
         taken: Boolean): Long
     {
-        val now = LocalDateTime.now()
-        val planned = LocalDate.now()
-            .atTime(intakeTime)
+        val today = LocalDate.now()
+        val planned = today.atTime(plannedTime)
+        val actual = actualTime?.let { today.atTime(it) }
+
+        Log.d("INTAKE_DEBUG", "Saving log: scheduleId=${schedule.id}, plannedDoseTime=???, taken=$taken")
         return intakeLogDao.insert(
             IntakeLog(
                 scheduleId = schedule.id,
                 plannedDoseTime = planned,
-                actualDoseTime = if (taken) now else null,
+                actualDoseTime = actual,
                 taken = taken
             )
         )

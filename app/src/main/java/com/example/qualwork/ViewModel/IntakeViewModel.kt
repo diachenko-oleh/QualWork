@@ -1,5 +1,6 @@
 package com.example.qualwork.ViewModel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -38,14 +39,16 @@ class IntakeViewModel @Inject constructor(
     var actionCompleted by mutableStateOf(false)
         private set
 
-    fun takeMedication(time: LocalTime) {
+    fun takeMedication() {
         val currentSchedule = schedule ?: return
+        val plannedTime = nextDoseTime ?: return
         viewModelScope.launch {
             isLoading = true
             try {
                 intakeLogRepository.logIntake(
                     schedule = currentSchedule,
-                    intakeTime = time,
+                    plannedTime = plannedTime,
+                    actualTime = LocalTime.now(),
                     taken = true
                 )
                 actionCompleted = true
@@ -55,14 +58,16 @@ class IntakeViewModel @Inject constructor(
         }
     }
 
-    fun skipMedication(time: LocalTime) {
+    fun skipMedication() {
         val currentSchedule = schedule ?: return
+        val plannedTime = nextDoseTime ?: return
         viewModelScope.launch {
             isLoading = true
             try {
                 intakeLogRepository.logIntake(
                     schedule = currentSchedule,
-                    intakeTime = time,
+                    plannedTime = plannedTime,
+                    actualTime = null,
                     taken = false
                 )
                 actionCompleted = true
@@ -76,16 +81,13 @@ class IntakeViewModel @Inject constructor(
     var nextDoseTime by mutableStateOf<LocalTime?>(null)
         private set
 
-    fun loadSchedule(scheduleId: Long) {
+    fun loadSchedule(scheduleId: Long, doseTime: LocalTime) {
         viewModelScope.launch {
             val data = medicationRepository.getAllWithSchedules().first()
                 .find { it.schedules.any { s -> s.id == scheduleId } }
             medication = data?.medication
             schedule = data?.schedules?.firstOrNull { it.id == scheduleId }
-
-            schedule?.let { s ->
-                nextDoseTime = getNextDose(s.id)
-            }
+            nextDoseTime = doseTime
         }
     }
 
@@ -99,15 +101,25 @@ class IntakeViewModel @Inject constructor(
 
         val now = LocalTime.now()
 
-        val taken = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
+        Log.d("INTAKE_DEBUG", "getNextDose: scheduleId=$scheduleId")
+        Log.d("INTAKE_DEBUG", "  times from DB = ${times.map { it.time }}")
+        Log.d("INTAKE_DEBUG", "  logsToday count = ${logsToday.size}")
+        Log.d("INTAKE_DEBUG", "  logsToday plannedDoseTime = ${logsToday.map { it.plannedDoseTime }}")
+        Log.d("INTAKE_DEBUG", "  now = $now")
 
-        val sorted = times.map { LocalTime.parse(it.time) }
+        val taken = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
+        Log.d("INTAKE_DEBUG", "  taken times = $taken")
+
+        val sorted = times.map { LocalTime.parse(it.time) }.sorted()
+        Log.d("INTAKE_DEBUG", "  sorted times = $sorted")
 
         val nextToday = sorted.firstOrNull {
             it > now && it !in taken
         }
+        val result = nextToday ?: sorted.firstOrNull()
+        Log.d("INTAKE_DEBUG", "  result = $result")
 
-        return nextToday ?: sorted.firstOrNull()
+        return result
     }
 
 

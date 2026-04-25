@@ -1,5 +1,6 @@
 package com.example.qualwork.ViewModel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,6 +10,7 @@ import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Repository.MedicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -27,27 +29,32 @@ class CourseInfoViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.getAllWithSchedules().collect { courseList ->
-                val result = mutableMapOf<Long, String>()
+            combine(
+                repository.getAllWithSchedules(),
+                intakeLogDao.observeAll()
+            ){courses, _ ->
+                courses
+            }.collect { courseList ->
+            val result = mutableMapOf<Long, String>()
 
-                courseList.forEach { medicationWithSchedules ->
-                    medicationWithSchedules.schedules.forEach { schedule ->
+            courseList.forEach { medicationWithSchedules ->
+                medicationWithSchedules.schedules.forEach { schedule ->
 
-                        val nextDose = calculateNextDose(schedule.id)
+                    val nextDose = calculateNextDose(schedule.id)
 
-                        result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
-                            val formattedTime = time.toString().substring(0, 5)
+                    result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
+                        val formattedTime = time.toString().substring(0, 5)
 
-                            if (isTomorrow) {
-                                "$formattedTime (завтра)"
-                            } else {
-                                formattedTime
-                            }
-                        } ?: "—"
-                    }
+                        if (isTomorrow) {
+                            "$formattedTime (завтра)"
+                        } else {
+                            "$formattedTime (сьогодні)"
+                        }
+                    } ?: "—"
                 }
+            }
 
-                nextDoseTime = result
+            nextDoseTime = result
             }
         }
     }
@@ -59,27 +66,28 @@ class CourseInfoViewModel @Inject constructor(
         val today = LocalDate.now().toString()
         val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
         val nowTime = LocalTime.now()
-        val nowDate = LocalDate.now()
+
+        Log.d("INTAKE_DEBUG", "calculateNextDose scheduleId=$scheduleId")
+        Log.d("INTAKE_DEBUG", "  today=$today")
+        Log.d("INTAKE_DEBUG", "  logsToday=${logsToday.map { "${it.plannedDoseTime} taken=${it.taken}" }}")
+        Log.d("INTAKE_DEBUG", "  nowTime=$nowTime")
+
 
         val takenTimes = logsToday
             .filter { it.taken }
-            .map { it.plannedDoseTime.toLocalTime()  }
+            .map { it.plannedDoseTime.toLocalTime() }
             .toSet()
 
-        val sortedTimes = times
-            .map { LocalTime.parse(it.time) }
-            .sorted()
+        Log.d("INTAKE_DEBUG", "  takenTimes=$takenTimes")
 
-        val nextToday = sortedTimes.firstOrNull { time ->
-            time.isAfter(nowTime) && time !in takenTimes
-        }
+        val sortedTimes = times.map { LocalTime.parse(it.time) }.sorted()
+        val nextToday = sortedTimes.firstOrNull { it.isAfter(nowTime) && it !in takenTimes }
 
-        if (nextToday != null) {
-            return nextToday to false
-        }
+        Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
 
-        val tomorrowTime = sortedTimes.first()
+        if (nextToday != null) return nextToday to false
+        return sortedTimes.first() to true
 
-        return tomorrowTime to true
+
     }
 }

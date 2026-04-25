@@ -9,6 +9,7 @@ import androidx.room.Update
 import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.IntakeTimeEntity
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDateTime
 
 @Dao
 interface IntakeLogDao {
@@ -19,6 +20,23 @@ interface IntakeLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(logs: List<IntakeLog>): List<Long>
+
+    @Query("""
+    SELECT * FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime >= :from 
+    AND plannedDoseTime <= :to
+""")
+    suspend fun getLogsByScheduleAndDateRange(
+        scheduleId: Long,
+        from: LocalDateTime,
+        to: LocalDateTime
+    ): List<IntakeLog>
+
+
+    @Query("SELECT * FROM intake_logs")
+    fun observeAll(): Flow<List<IntakeLog>>
+
 
 
     // Update

@@ -26,10 +26,11 @@ fun RootNavHost(
     LaunchedEffect(pendingIntakeId, pendingDoseTime) {
         val id = pendingIntakeId
         val doseTime = pendingDoseTime
-
+        Log.d("INTAKE_DEBUG", "LaunchedEffect: id=$id, dose=$doseTime")
         if (id != null && doseTime != null) {
 
             val now = System.currentTimeMillis()
+            Log.d("INTAKE_DEBUG", "now=$now, dose=$doseTime, diff=${doseTime - now}ms, isValid=${now <= doseTime + 30*60*1000}")
             val isValid = now <= doseTime + 30 * 60 * 1000
 
             if (isValid) {
@@ -40,7 +41,7 @@ fun RootNavHost(
                     TreatTabNavigator.Intake.createRoute(id, doseTime)
                 )
             } else {
-                Log.d("NOTIF_FLOW", "Intake expired, navigation blocked")
+                Log.d("INTAKE_DEBUG", "Intake expired, navigation blocked")
             }
 
             onIntakeHandled()
@@ -51,6 +52,23 @@ fun RootNavHost(
         navController = navController,
         startDestination = RootNavigator.SplashScreen.route
     ) {
+        composable(
+            route = TreatTabNavigator.Intake.route,
+            arguments = listOf(
+                navArgument("scheduleId") { type = NavType.LongType },
+                navArgument("doseTime") { type = NavType.LongType }
+            )
+        )
+        { backStackEntry ->
+            val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: return@composable
+            val doseTime = backStackEntry.arguments?.getLong("doseTime")?: return@composable
+            IntakeScreen(
+                scheduleId = scheduleId,
+                doseTime = doseTime,
+                onActionCompleted = { navController.popBackStack() }
+            )
+        }
+
         composable(RootNavigator.SplashScreen.route) {
             //Log.d("NAV", "SplashScreen entered")
             SplashScreen(
@@ -119,23 +137,6 @@ fun RootNavHost(
                 courseId = courseId,
                 onBackClick = { navController.popBackStack() },
                 onCourseAdded = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = TreatTabNavigator.Intake.route,
-            arguments = listOf(
-                navArgument("scheduleId") { type = NavType.LongType },
-                navArgument("doseTime") { type = NavType.LongType }
-            )
-        )
-        { backStackEntry ->
-            val scheduleId = backStackEntry.arguments?.getLong("scheduleId") ?: return@composable
-            val doseTime = backStackEntry.arguments?.getLong("doseTime")?: return@composable
-            IntakeScreen(
-                scheduleId = scheduleId,
-                doseTime = doseTime,
-                onActionCompleted = { navController.popBackStack() }
             )
         }
     }

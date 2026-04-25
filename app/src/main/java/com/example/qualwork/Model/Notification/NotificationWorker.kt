@@ -28,11 +28,9 @@ class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
-
-
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
-        Log.d("WORK_DEBUG", "doWork STARTED")
+        //Log.d("WORK_DEBUG", "doWork STARTED")
         val medicationName = inputData.getString(KEY_MEDICATION_NAME) ?: return Result.failure()
         val dosage = inputData.getInt(KEY_DOSAGE, 1)
         val unit = inputData.getString(KEY_UNIT) ?: ""
@@ -40,16 +38,16 @@ class NotificationWorker @AssistedInject constructor(
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
         val timeString = inputData.getString(KEY_TIME) ?: return Result.failure()
 
-        Log.d("WORK_DEBUG", "endDate = $endDate, now = ${System.currentTimeMillis()}")
+        //Log.d("WORK_DEBUG", "endDate = $endDate, now = ${System.currentTimeMillis()}")
         scheduleMissedCheck(scheduleId, timeString)
 
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
         try {
-            Log.d("WORK_DEBUG", "Before showNotification()")
+            //Log.d("WORK_DEBUG", "Before showNotification()")
             showNotification(medicationName, dosage, unit, scheduleId, timeString)
-            Log.d("WORK_DEBUG", "Notification shown")
+            //Log.d("WORK_DEBUG", "Notification shown")
             return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
@@ -103,7 +101,7 @@ class NotificationWorker @AssistedInject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        Log.d("NOTIF_FLOW", "Creating notification scheduleId = $scheduleId")
+        //Log.d("INTAKE_DEBUG", "Creating notification scheduleId = $scheduleId")
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Час приймати $medicationName")
@@ -114,6 +112,7 @@ class NotificationWorker @AssistedInject constructor(
             .setContentIntent(pendingIntent)
             .build()
 
+        Log.d("INTAKE_DEBUG", "Worker sending timeString = $timeString, scheduleId = $scheduleId")
         val notificationId = scheduleId.toInt() * 100 + timeString.hashCode()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
