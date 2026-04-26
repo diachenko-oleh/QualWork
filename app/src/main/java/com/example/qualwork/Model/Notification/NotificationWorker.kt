@@ -21,6 +21,10 @@ import androidx.work.workDataOf
 import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
@@ -30,7 +34,6 @@ class NotificationWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
-        //Log.d("WORK_DEBUG", "doWork STARTED")
         val medicationName = inputData.getString(KEY_MEDICATION_NAME) ?: return Result.failure()
         val dosage = inputData.getInt(KEY_DOSAGE, 1)
         val unit = inputData.getString(KEY_UNIT) ?: ""
@@ -38,33 +41,48 @@ class NotificationWorker @AssistedInject constructor(
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
         val timeString = inputData.getString(KEY_TIME) ?: return Result.failure()
 
-        //Log.d("WORK_DEBUG", "endDate = $endDate, now = ${System.currentTimeMillis()}")
+
         scheduleMissedCheck(scheduleId, timeString)
 
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
         try {
-            //Log.d("WORK_DEBUG", "Before showNotification()")
             showNotification(medicationName, dosage, unit, scheduleId, timeString)
-            //Log.d("WORK_DEBUG", "Notification shown")
             return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
         }
     }
     private fun scheduleMissedCheck(scheduleId: Long, time: String) {
+        Log.d("MISSED_DEBUG", "Scheduling missed check: scheduleId=$scheduleId, time=$time, delay=10min")
+
         val inputData = workDataOf(
             "scheduleId" to scheduleId,
             "time" to time
         )
 
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
-            .setInitialDelay(30, TimeUnit.MINUTES)      //30хвилин
+            .setInitialDelay(1, TimeUnit.MINUTES) //10хвилин
             .setInputData(inputData)
+            .addTag("missed_$scheduleId")
             .build()
 
         WorkManager.getInstance(context).enqueue(work)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(2000)
+            WorkManager.getInstance(context)
+                .getWorkInfosByTag("missed_$scheduleId")
+                .get()
+                .forEach { Log.d("MISSED_DEBUG", "WorkInfo: state=${it.state}, id=${it.id}") }
+
+            delay(90000) // ще 90 секунд
+            WorkManager.getInstance(context)
+                .getWorkInfosByTag("missed_$scheduleId")
+                .get()
+                .forEach { Log.d("MISSED_DEBUG", "WorkInfo 90s: state=${it.state}, id=${it.id}") }
+        }
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -74,7 +92,8 @@ class NotificationWorker @AssistedInject constructor(
         unit: String,
         scheduleId: Long,
         timeString: String
-    ) {
+    )
+    {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,

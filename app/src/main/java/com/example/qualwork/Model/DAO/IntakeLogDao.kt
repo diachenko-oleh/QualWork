@@ -37,8 +37,6 @@ interface IntakeLogDao {
     @Query("SELECT * FROM intake_logs")
     fun observeAll(): Flow<List<IntakeLog>>
 
-
-
     // Update
     @Update
     suspend fun update(log: IntakeLog)
@@ -54,7 +52,13 @@ interface IntakeLogDao {
     @Query("DELETE FROM intake_logs WHERE scheduleId = :scheduleId")
     suspend fun deleteByScheduleId(scheduleId: Long)
 
-
+    @Query("""
+    SELECT COUNT(*) FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime LIKE :plannedDate || '%'
+    AND taken = 0
+    """)
+    suspend fun isSkipped(scheduleId: Long, plannedDate: String): Int
     // Get by ID
     @Query("SELECT * FROM intake_logs WHERE id = :id")
     suspend fun getById(id: Long): IntakeLog?
@@ -100,4 +104,12 @@ interface IntakeLogDao {
 
     @Query("SELECT * FROM intake_logs WHERE scheduleId = :scheduleId ORDER BY actualDoseTime DESC LIMIT 1")
     suspend fun getLastLog(scheduleId: Long): IntakeLog?
+
+    @Query("""
+    SELECT COUNT(*) FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime LIKE :plannedDate || '%'
+    AND taken = 1
+    """)
+    suspend fun isTaken(scheduleId: Long, plannedDate: String): Int
 }

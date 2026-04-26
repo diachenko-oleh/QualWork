@@ -30,8 +30,8 @@ fun RootNavHost(
         if (id != null && doseTime != null) {
 
             val now = System.currentTimeMillis()
-            Log.d("INTAKE_DEBUG", "now=$now, dose=$doseTime, diff=${doseTime - now}ms, isValid=${now <= doseTime + 30*60*1000}")
-            val isValid = now <= doseTime + 30 * 60 * 1000
+            Log.d("INTAKE_DEBUG", "now=$now, dose=$doseTime, diff=${doseTime - now}ms, isValid=${now <= doseTime + 10*60*1000}")
+            val isValid = now <= doseTime + 10 * 60 * 1000 //10хвилин
 
             if (isValid) {
                 navController.navigate(RootNavigator.Home.route) {

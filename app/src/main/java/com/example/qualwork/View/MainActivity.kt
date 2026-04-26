@@ -33,23 +33,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.View.Settings.SettingsScreen
 import com.example.qualwork.View.Search.SearchScreen
 import com.example.qualwork.View.Start.RootNavHost
 import com.example.qualwork.View.Treatment.TreatmentScreen
 import com.example.qualwork.View.theme.QualWorkTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var intakeLogDao: IntakeLogDao
     private var intakeScheduleId by mutableStateOf<Long?>(null)
     private var doseTime by mutableStateOf<Long?>(null)
+
+    private fun handleIntent(intent: Intent) {
+        val id = intent.getLongExtra("scheduleId", -1L)
+        val timeString = intent.getStringExtra("time")
+
+        Log.d("INTAKE_DEBUG", "handleIntent: id=$id, timeString=$timeString")
+
+        if (id != -1L && timeString != null) {
+            val time = LocalTime.parse(timeString)
+            val doseDateTime = LocalDate.now().atTime(time)
+            val epochMilli = doseDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            Log.d("INTAKE_DEBUG", "Converted: LocalTime=$time, epochMilli=$epochMilli")
+            lifecycleScope.launch {
+                val plannedDate = doseDateTime.toString().substring(0, 16)
+                val alreadyTaken = intakeLogDao.isTaken(id, plannedDate) > 0
+
+                if (!alreadyTaken) {
+                    intakeScheduleId = id
+                    doseTime = epochMilli
+                } else {
+                    Log.d("INTAKE_DEBUG", "Already taken, skip navigation")
+                }
+            }
+        }
+    }
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -85,24 +116,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
-    }
-
-    private fun handleIntent(intent: Intent) {
-        //Log.d("NOTIF_FLOW", "handleIntent called")
-
-        val id = intent.getLongExtra("scheduleId", -1L)
-        val timeString = intent.getStringExtra("time")
-
-        Log.d("INTAKE_DEBUG", "handleIntent: id=$id, timeString=$timeString")
-
-        if (id != -1L && timeString != null) {
-            val time = LocalTime.parse(timeString)
-            val doseDateTime = LocalDate.now().atTime(time)
-            val epochMilli = doseDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            Log.d("INTAKE_DEBUG", "Converted: LocalTime=$time, epochMilli=$epochMilli")
-            intakeScheduleId = id
-            doseTime = epochMilli
-        }
     }
 }
 @Composable
