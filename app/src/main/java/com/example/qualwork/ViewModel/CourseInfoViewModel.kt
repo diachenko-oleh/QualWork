@@ -84,9 +84,10 @@ class CourseInfoViewModel @Inject constructor(
         Log.d("INTAKE_DEBUG", "  takenTimes=$takenTimes")
 
         val sortedTimes = times.map { LocalTime.parse(it.time) }.sorted()
-        val nextToday = sortedTimes.firstOrNull { it.isAfter(nowTime) && it !in takenTimes }
+        val nextToday = sortedTimes.firstOrNull     {!it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes}
+            // { it.isAfter(nowTime) && it !in takenTimes }
 
-        Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
+            Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
 
         if (nextToday != null) return nextToday to false
         return sortedTimes.first() to true

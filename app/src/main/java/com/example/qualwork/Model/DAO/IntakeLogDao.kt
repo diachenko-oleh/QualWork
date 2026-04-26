@@ -74,7 +74,11 @@ interface IntakeLogDao {
     """)
     fun getByTakenStatus(scheduleId: Long, taken: Boolean): Flow<List<IntakeLog>>
 
-    @Query("""SELECT * FROM intake_logs WHERE scheduleId = :scheduleId AND plannedDoseTime = :date""")
+    @Query("""
+    SELECT * FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime LIKE :date || '%'
+    """)
     suspend fun getTodayLogs(
         scheduleId: Long,
         date: String

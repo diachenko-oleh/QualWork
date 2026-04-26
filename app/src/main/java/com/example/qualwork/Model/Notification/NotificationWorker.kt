@@ -60,7 +60,7 @@ class NotificationWorker @AssistedInject constructor(
         )
 
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
-            .setInitialDelay(30, TimeUnit.MINUTES)
+            .setInitialDelay(30, TimeUnit.MINUTES)      //30хвилин
             .setInputData(inputData)
             .build()
 

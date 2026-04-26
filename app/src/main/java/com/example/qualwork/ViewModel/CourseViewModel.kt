@@ -1,5 +1,6 @@
 package com.example.qualwork.ViewModel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -283,10 +284,16 @@ class CourseViewModel @Inject constructor(
         val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
         val loggedTimes = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
 
+        Log.d("INTAKE_DEBUG", "refreshActiveIntake: scheduleId=$scheduleId")
+        Log.d("INTAKE_DEBUG", "  logsToday=${logsToday.map { "${it.plannedDoseTime} taken=${it.taken}" }}")
+        Log.d("INTAKE_DEBUG", "  loggedTimes=$loggedTimes")
+        Log.d("INTAKE_DEBUG", "  now=$now")
+
         return times
             .map { LocalTime.parse(it.time) }
             .firstOrNull { time ->
                 val diff = Duration.between(time, now).toMinutes()
+                Log.d("INTAKE_DEBUG", "  time=$time, diff=$diff")
                 diff in 0..9 && time !in loggedTimes
             }
     }
@@ -318,7 +325,11 @@ class CourseViewModel @Inject constructor(
         }
     }
 
-
+    fun refreshActiveIntake(scheduleId: Long) {
+        viewModelScope.launch {
+            activeIntakeTime = findActiveIntakeTime(scheduleId)
+        }
+    }
 
     enum class CourseDuration(val label: String) {
         WEEK_1("1 тиждень"),

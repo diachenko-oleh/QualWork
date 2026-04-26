@@ -26,7 +26,8 @@ class IntakeLogRepository @Inject constructor(
         val planned = today.atTime(plannedTime)
         val actual = actualTime?.let { today.atTime(it) }
 
-        Log.d("INTAKE_DEBUG", "Saving log: scheduleId=${schedule.id}, plannedDoseTime=???, taken=$taken")
+        Log.d("INTAKE_DEBUG", "Saving log: plannedDoseTime=$planned, string=${planned.toString()}")
+
         return intakeLogDao.insert(
             IntakeLog(
                 scheduleId = schedule.id,
