@@ -73,32 +73,4 @@ class NotificationScheduler @Inject constructor(
 
         return Duration.between(now, nextTrigger).toMillis()
     }
-
-    fun scheduleDelayed(
-        delayMinutes: Int,
-        medicationName: String,
-        dosage: Int,
-        unit: String,
-        scheduleId:Long
-    ) {
-        Log.d("WORK_DEBUG", "scheduleDelayed called")
-        Log.d("WORK_DEBUG", "scheduleId = $scheduleId, delay = $delayMinutes")
-        val inputData = workDataOf(
-            NotificationWorker.KEY_MEDICATION_NAME to medicationName,
-            NotificationWorker.KEY_DOSAGE to dosage,
-            NotificationWorker.KEY_UNIT to unit,
-            NotificationWorker.KEY_END_DATE to -1L,
-            NotificationWorker.KEY_SCHEDULE_ID to scheduleId,
-            NotificationWorker.KEY_TIME to "08:00"
-        )
-
-        val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
-            .setInitialDelay(delayMinutes.toLong(), TimeUnit.MINUTES)
-            .setInputData(inputData)
-            .addTag("test_notification")
-            .build()
-        Log.d("WORK_DEBUG", "WorkRequest created: $workRequest")
-        Log.d("WORK_DEBUG", "Enqueuing work...")
-        workManager.enqueue(workRequest)
-    }
 }

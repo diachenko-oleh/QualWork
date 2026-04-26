@@ -101,9 +101,7 @@ fun TreatMainPage(
                            )
                         }
                         item {
-                            NotificationTestCard(
-                                scheduler = viewModel.getScheduler()
-                            )
+                            //NotificationTestCard(scheduler = viewModel.getScheduler())
                         }
                     }
                 }
@@ -198,7 +196,8 @@ fun NotificationTestCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
+    )
+    {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -228,7 +227,7 @@ fun NotificationTestCard(
                 }
             }
 
-            OutlinedButton(
+            /*OutlinedButton(
                 onClick = {
                     scheduler.scheduleDelayed(
                         delayMinutes = delayMinutes,
@@ -241,7 +240,7 @@ fun NotificationTestCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Відправити через $delayMinutes хв")
-            }
+            }*/
         }
     }
 }

@@ -305,8 +305,7 @@ class CourseViewModel @Inject constructor(
             val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
             val loggedTimes = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
 
-            times
-                .map { LocalTime.parse(it.time) }
+            times.map { LocalTime.parse(it.time) }
                 .filter { time ->
                     val diff = Duration.between(time, now).toMinutes()
                     diff > 10 && time !in loggedTimes

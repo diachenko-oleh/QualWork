@@ -40,4 +40,26 @@ class IntakeLogRepository @Inject constructor(
 
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
         intakeLogDao.getByScheduleId(scheduleId)
+
+    suspend fun checkIfTaken(scheduleId: Long, plannedDoseTime: LocalDateTime): Boolean {
+        val dateString = plannedDoseTime.toLocalDate().toString() // "yyyy-MM-dd"
+        return intakeLogDao.isTaken(scheduleId, dateString) > 0
+    }
+    suspend fun markAsMissed(scheduleId: Long, plannedDoseTime: LocalDateTime) {
+        val existing = intakeLogDao.getTodayLogs(
+            scheduleId,
+            plannedDoseTime.toLocalDate().toString()
+        ).find { it.plannedDoseTime == plannedDoseTime }
+
+        if (existing == null) {
+            intakeLogDao.insert(
+                IntakeLog(
+                    scheduleId = scheduleId,
+                    plannedDoseTime = plannedDoseTime,
+                    actualDoseTime = null,
+                    taken = false
+                )
+            )
+        }
+    }
 }
