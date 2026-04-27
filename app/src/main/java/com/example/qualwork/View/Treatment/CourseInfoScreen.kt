@@ -1,15 +1,19 @@
 package com.example.qualwork.View.Treatment
 
+import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
@@ -44,11 +48,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.qualwork.Model.Entity.DayStatus
+import com.example.qualwork.Model.Entity.status
 import com.example.qualwork.ViewModel.formatDate
 import java.time.LocalDate
 import java.time.ZoneId
@@ -68,15 +75,15 @@ fun CourseInfoScreen(
         ?: return
     val schedule = courseData.schedules.first()
     var showDeleteDialog by remember { mutableStateOf(false) }
-
-    val stats by viewModel
-        .getStats(courseId)
-        .collectAsState(initial = emptyList())
-
     LaunchedEffect(schedule.id) {
         viewModel.startWatchingActiveIntake(schedule.id)
     }
     val activeIntakeTime = viewModel.activeIntakeTime
+    val calendarStats by viewModel.getCalendarStats(
+        scheduleId = schedule.id,
+        startDateMillis = schedule.startDate,
+        endDateMillis = schedule.endDate
+    ).collectAsState(initial = emptyList())
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -216,9 +223,22 @@ fun CourseInfoScreen(
                 style = MaterialTheme.typography.titleLarge
             )
 
-            LazyRow {
-                items(stats) { day ->
-                    DayStatCard(day)
+            LazyColumn {
+                items(calendarStats) { week ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        week.forEach { day ->
+                            DayStatCard(
+                                stat = day,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        repeat(7 - week.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
 
@@ -253,7 +273,6 @@ fun CourseInfoScreen(
 
             activeIntakeTime?.let { time ->
                 val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
-
                 Button(
                     onClick = {
                         val doseTimeMillis = LocalDate.now()
@@ -267,12 +286,7 @@ fun CourseInfoScreen(
                 ) {
                     Text("Записати прийом за $formattedTime")
                 }
-            } ?: run {
-                LaunchedEffect(Unit) {
-                    viewModel.markExpiredAsSkipped(schedule.id)
-                }
             }
-
         }
     }
 }
@@ -296,36 +310,71 @@ private fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-fun DayStatCard(stat: DayIntakeStat) {
+fun DayStatCard(
+    stat: DayIntakeStat,
+    modifier: Modifier = Modifier
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    val backgroundColor = when (stat.status) {
+        DayStatus.ALL_TAKEN -> Color(0xFF4CAF50)
+        DayStatus.ALL_MISSED -> Color(0xFFF44336)
+        DayStatus.PARTIAL -> Color(0xFFFF9800)
+        DayStatus.FUTURE -> MaterialTheme.colorScheme.surfaceVariant
+    }
 
     Card(
-        modifier = Modifier
-            .width(120.dp)
-            .height(100.dp)
+        modifier = modifier
+            .aspectRatio(1f)
+            .clickable { showDialog = true },
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
-
-        Column(
-            modifier = Modifier
-                .padding(8.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-
             Text(
-                text = stat.date,
-                style = MaterialTheme.typography.labelMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Прийнято: ${stat.taken}",
-                color = Color.Green
-            )
-
-            Text(
-                text = "Пропущено: ${stat.missed}",
-                color = Color.Red
+                text = stat.date.dayOfMonth.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White
             )
         }
+    }
+
+    if (showDialog && stat.intakes.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = {
+                Text(stat.date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    stat.intakes.forEach { intake ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Очікувався: ${intake.plannedTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+                            Text(
+                                text = if (intake.taken) "✓" else "✗",
+                                color = if (intake.taken) Color(0xFF4CAF50) else Color(0xFFF44336)
+                            )
+                        }
+                        intake.actualTime?.let { actual ->
+                            Text(
+                                text = "Прийнято: ${actual.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Закрити")
+                }
+            }
+        )
     }
 }

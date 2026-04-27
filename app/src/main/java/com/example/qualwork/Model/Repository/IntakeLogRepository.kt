@@ -38,28 +38,26 @@ class IntakeLogRepository @Inject constructor(
         )
     }
 
+    suspend fun logMissedIntake(
+        scheduleId: Long,
+        plannedTime: LocalTime
+    ): Long {
+        val planned = LocalDate.now().atTime(plannedTime)
+
+        return intakeLogDao.insert(
+            IntakeLog(
+                scheduleId = scheduleId,
+                plannedDoseTime = planned,
+                actualDoseTime = null,
+                taken = false
+            )
+        )
+    }
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
         intakeLogDao.getByScheduleId(scheduleId)
 
     suspend fun checkIfTaken(scheduleId: Long, plannedDoseTime: LocalDateTime): Boolean {
         val dateString = plannedDoseTime.toLocalDate().toString() // "yyyy-MM-dd"
         return intakeLogDao.isTaken(scheduleId, dateString) > 0
-    }
-    suspend fun markAsMissed(scheduleId: Long, plannedDoseTime: LocalDateTime) {
-        val existing = intakeLogDao.getTodayLogs(
-            scheduleId,
-            plannedDoseTime.toLocalDate().toString()
-        ).find { it.plannedDoseTime == plannedDoseTime }
-
-        if (existing == null) {
-            intakeLogDao.insert(
-                IntakeLog(
-                    scheduleId = scheduleId,
-                    plannedDoseTime = plannedDoseTime,
-                    actualDoseTime = null,
-                    taken = false
-                )
-            )
-        }
     }
 }

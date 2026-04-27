@@ -51,6 +51,10 @@ class MissedWorker @AssistedInject constructor(
         Log.d("MISSED_DEBUG", "wasTaken=$wasTaken")
 
         if (!wasTaken) {
+            intakeRepository.logMissedIntake(
+                scheduleId = scheduleId,
+                plannedTime = plannedDateTime.toLocalTime()
+            )
             showMissedNotification(medicationName,plannedDateTime.toLocalTime(), scheduleId)
         }
        return Result.success()

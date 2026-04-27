@@ -63,12 +63,14 @@ class CourseInfoViewModel @Inject constructor(
     }
 
     private suspend fun calculateNextDose(scheduleId: Long): Pair<LocalTime, Boolean>? {
+        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
         val times = intakeTimeDao.getBySchedule(scheduleId)
         if (times.isEmpty()) return null
 
         val today = LocalDate.now().toString()
         val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
         val nowTime = LocalTime.now()
+        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
 
         Log.d("INTAKE_DEBUG", "calculateNextDose scheduleId=$scheduleId")
         Log.d("INTAKE_DEBUG", "  today=$today")

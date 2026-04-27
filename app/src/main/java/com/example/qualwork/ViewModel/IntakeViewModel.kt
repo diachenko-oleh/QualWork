@@ -91,36 +91,6 @@ class IntakeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun getNextDose(scheduleId: Long): LocalTime? {
-
-        val times = intakeTimeDao.getBySchedule(scheduleId)
-        val logsToday = intakeLogDao.getTodayLogs(
-            scheduleId,
-            LocalDate.now().toString()
-        )
-
-        val now = LocalTime.now()
-
-        Log.d("INTAKE_DEBUG", "getNextDose: scheduleId=$scheduleId")
-        Log.d("INTAKE_DEBUG", "  times from DB = ${times.map { it.time }}")
-        Log.d("INTAKE_DEBUG", "  logsToday count = ${logsToday.size}")
-        Log.d("INTAKE_DEBUG", "  logsToday plannedDoseTime = ${logsToday.map { it.plannedDoseTime }}")
-        Log.d("INTAKE_DEBUG", "  now = $now")
-
-        val taken = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
-        Log.d("INTAKE_DEBUG", "  taken times = $taken")
-
-        val sorted = times.map { LocalTime.parse(it.time) }.sorted()
-        Log.d("INTAKE_DEBUG", "  sorted times = $sorted")
-
-        val nextToday = sorted.firstOrNull {
-            it > now && it !in taken
-        }
-        val result = nextToday ?: sorted.firstOrNull()
-        Log.d("INTAKE_DEBUG", "  result = $result")
-
-        return result
-    }
 
 
 }

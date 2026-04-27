@@ -11,6 +11,7 @@ import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.Model.Entity.IntakeLog
+import com.example.qualwork.Model.Entity.IntakeLogStat
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
@@ -27,8 +28,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import javax.inject.Inject
@@ -230,14 +233,12 @@ class CourseViewModel @Inject constructor(
                 )
                 savedSuccessfully = true
             } catch (e: Exception) {
-                android.util.Log.e("AddCourse", "Помилка: ${e.message}")
+                    Log.e("AddCourse", "Помилка: ${e.message}")
             } finally {
                 isSaving = false
             }
         }
     }
-
-    fun getScheduler(): NotificationScheduler = notificationScheduler
 
     val courses: StateFlow<List<MedicationWithSchedules>> =
         medRepository.getAllWithSchedules()
@@ -247,22 +248,24 @@ class CourseViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
-    fun getStats(scheduleId: Long): Flow<List<DayIntakeStat>> {
+    fun getDetailedStats(scheduleId: Long): Flow<List<DayIntakeStat>> {
         return intakeRepository.getLogsForSchedule(scheduleId)
             .map { logs ->
-                logs.groupBy { it.plannedDoseTime.toLocalDate() }
+                logs
+                    .groupBy { it.plannedDoseTime.toLocalDate() }
                     .map { (date, items) ->
-
-                        val total = items.size
-                        val taken = items.count { it.taken }
-
                         DayIntakeStat(
-                            date = date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                            total = total,
-                            taken = taken
+                            date = date,
+                            intakes = items.map { log ->
+                                IntakeLogStat(
+                                    plannedTime = log.plannedDoseTime.toLocalTime(),
+                                    actualTime = log.actualDoseTime?.toLocalTime(),
+                                    taken = log.taken
+                                )
+                            }.sortedBy { it.plannedTime }
                         )
                     }
-                    .sortedBy { it.date }
+                    .sortedByDescending { it.date }
             }
     }
 
@@ -272,7 +275,7 @@ class CourseViewModel @Inject constructor(
         viewModelScope.launch {
             while (true) {
                 activeIntakeTime = findActiveIntakeTime(scheduleId)
-                delay(30_000)
+                delay(60_000)
             }
         }
     }
@@ -294,35 +297,10 @@ class CourseViewModel @Inject constructor(
             .firstOrNull { time ->
                 val diff = Duration.between(time, now).toMinutes()
                 Log.d("INTAKE_DEBUG", "  time=$time, diff=$diff")
-                diff in 0..9 && time !in loggedTimes
+                diff in 0..9 && time !in loggedTimes        //10хвилин очікування
             }
     }
-    fun markExpiredAsSkipped(scheduleId: Long) {
-        viewModelScope.launch {
-            val times = intakeTimeDao.getBySchedule(scheduleId)
-            val now = LocalTime.now()
-            val today = LocalDate.now().toString()
-            val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
-            val loggedTimes = logsToday.map { it.plannedDoseTime.toLocalTime() }.toSet()
 
-            times.map { LocalTime.parse(it.time) }
-                .filter { time ->
-                    val diff = Duration.between(time, now).toMinutes()
-                    diff > 10 && time !in loggedTimes
-                }
-                .forEach { time ->
-                    intakeLogDao.insert(
-                        IntakeLog(
-                            scheduleId = scheduleId,
-                            plannedDoseTime = LocalDate.now().atTime(time),
-                            actualDoseTime = null,
-                            taken = false
-                        )
-                    )
-                }
-            activeIntakeTime = null
-        }
-    }
 
     fun refreshActiveIntake(scheduleId: Long) {
         viewModelScope.launch {
@@ -338,5 +316,33 @@ class CourseViewModel @Inject constructor(
         MONTH_2("2 місяці"),
         MONTH_3("3 місяці")
     }
-}
 
+    fun getCalendarStats(
+        scheduleId: Long,
+        startDateMillis: Long,
+        endDateMillis: Long?
+    ): Flow<List<List<DayIntakeStat>>> {
+        return getDetailedStats(scheduleId).map { stats ->
+            val start = Instant.ofEpochMilli(startDateMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            val end = endDateMillis?.let {
+                Instant.ofEpochMilli(it)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+            } ?: LocalDate.now()
+
+            Log.d("CALENDAR_DEBUG", "startDate=$start, endDate=$end")
+
+            val statsMap = stats.associateBy { it.date }
+
+            generateSequence(start) { it.plusDays(1) }
+                .takeWhile { !it.isAfter(end) }
+                .map { date ->
+                    statsMap[date] ?: DayIntakeStat(date = date, intakes = emptyList())
+                }
+                .toList()
+                .chunked(7)
+        }
+    }
+}
