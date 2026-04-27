@@ -112,13 +112,16 @@ class CourseViewModel @Inject constructor(
     //збереження тривалості
     var startDate by mutableStateOf(System.currentTimeMillis())
         private set
-    var endDate by mutableStateOf<Long?>(null)
+    var endDate by mutableStateOf<Long?>(
+        Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 6)
+        }.timeInMillis
+    )
         private set
-    var isIndefinite by mutableStateOf(false)
+    var duration by mutableStateOf<CourseDuration?>(CourseDuration.WEEK_1)
         private set
-    var duration by mutableStateOf<CourseDuration?>(null)
+    var isCustomDuration by mutableStateOf(false)
         private set
-
     var medAmount by mutableStateOf<Int?>(null)
         private set
 
@@ -150,12 +153,13 @@ class CourseViewModel @Inject constructor(
         duration = newDuration
         recalculateEndDate()
     }
-    fun onIndefiniteChange(value: Boolean) {
-        isIndefinite = value
-
-        if (value) {
-            endDate = null
-        } else {
+    fun onEndDateChange(date: Long) {
+        endDate = date
+    }
+    fun onCustomDurationChange(value: Boolean) {
+        isCustomDuration = value
+        if (!value) {
+            duration = CourseDuration.WEEK_1
             recalculateEndDate()
         }
     }
@@ -164,11 +168,6 @@ class CourseViewModel @Inject constructor(
     }
 
     private fun recalculateEndDate() {
-        if (isIndefinite) {
-            endDate = null
-            return
-        }
-
         val d = duration ?: return
 
         val calendar = Calendar.getInstance().apply {
@@ -176,12 +175,12 @@ class CourseViewModel @Inject constructor(
         }
 
         when (d) {
-            CourseDuration.WEEK_1 -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
-            CourseDuration.WEEK_2 -> calendar.add(Calendar.WEEK_OF_YEAR, 2)
-            CourseDuration.WEEK_3 -> calendar.add(Calendar.WEEK_OF_YEAR, 3)
-            CourseDuration.MONTH_1 -> calendar.add(Calendar.MONTH, 1)
-            CourseDuration.MONTH_2 -> calendar.add(Calendar.MONTH, 2)
-            CourseDuration.MONTH_3 -> calendar.add(Calendar.MONTH, 3)
+            CourseDuration.WEEK_1 -> calendar.add(Calendar.DAY_OF_YEAR, 6)
+            CourseDuration.WEEK_2 -> calendar.add(Calendar.DAY_OF_YEAR, 13)
+            CourseDuration.WEEK_3 -> calendar.add(Calendar.DAY_OF_YEAR, 20)
+            CourseDuration.MONTH_1 -> calendar.add(Calendar.MONTH, 1).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
+            CourseDuration.MONTH_2 -> calendar.add(Calendar.MONTH, 2).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
+            CourseDuration.MONTH_3 -> calendar.add(Calendar.MONTH, 3).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
         }
 
         endDate = calendar.timeInMillis

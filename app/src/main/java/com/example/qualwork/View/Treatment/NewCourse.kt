@@ -357,7 +357,9 @@ private fun Step2Content(viewModel: CourseViewModel) {
 @Composable
 private fun Step3Content(viewModel: CourseViewModel) {
     var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
@@ -382,21 +384,20 @@ private fun Step3Content(viewModel: CourseViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Безстроково",
+                text = "Своя тривалість",
                 style = MaterialTheme.typography.bodyLarge
             )
             Switch(
-                checked = viewModel.isIndefinite,
-                onCheckedChange = { viewModel.onIndefiniteChange(it) }
+                checked = viewModel.isCustomDuration,
+                onCheckedChange = { viewModel.onCustomDurationChange(it) }
             )
         }
 
-        if (!viewModel.isIndefinite) {
+        if (!viewModel.isCustomDuration) {
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
             ) {
-
                 OutlinedTextField(
                     value = viewModel.duration?.label ?: "",
                     onValueChange = {},
@@ -409,12 +410,11 @@ private fun Step3Content(viewModel: CourseViewModel) {
                         .menuAnchor()
                         .fillMaxWidth()
                 )
-
                 ExposedDropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    CourseViewModel.CourseDuration.values().forEach { duration ->
+                    CourseViewModel.CourseDuration.entries.forEach { duration ->
                         DropdownMenuItem(
                             text = { Text(duration.label) },
                             onClick = {
@@ -425,12 +425,25 @@ private fun Step3Content(viewModel: CourseViewModel) {
                     }
                 }
             }
-            viewModel.endDate?.let {
-                Text(
-                    text = "Дата завершення: ${formatDate(it)}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+        } else {
+            OutlinedTextField(
+                value = viewModel.endDate?.let { formatDate(it) } ?: "",
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Дата завершення") },
+                trailingIcon = {
+                    IconButton(onClick = { showEndDatePicker = true }) {
+                        Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        viewModel.endDate?.let {
+            Text(
+                text = "Дата завершення: ${formatDate(it)}",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
     }
 
@@ -442,6 +455,16 @@ private fun Step3Content(viewModel: CourseViewModel) {
                 showStartDatePicker = false
             },
             onDismiss = { showStartDatePicker = false }
+        )
+    }
+    if (showEndDatePicker) {
+        DatePickerDialog(
+            initialDate = viewModel.startDate,
+            onDateSelected = {
+                viewModel.onEndDateChange(it)
+                showEndDatePicker = false
+            },
+            onDismiss = { showEndDatePicker = false }
         )
     }
 }
