@@ -61,6 +61,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideIntakeLogRepository(
-        intakeLogDao: IntakeLogDao
-    ): IntakeLogRepository = IntakeLogRepository(intakeLogDao)
+        intakeLogDao: IntakeLogDao,
+        scheduleDao: ScheduleDao
+    ): IntakeLogRepository = IntakeLogRepository(intakeLogDao,scheduleDao)
 }

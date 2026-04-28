@@ -13,7 +13,11 @@ import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -31,6 +35,17 @@ class CourseInfoViewModel @Inject constructor(
 
     var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
+    val medAmounts: StateFlow<Map<Long, Int?>> =
+        medRepository.getAllWithSchedules()
+            .map { courses ->
+                courses.flatMap { it.schedules }
+                    .associate { it.id to it.medAmount }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyMap()
+            )
 
     init {
         viewModelScope.launch {

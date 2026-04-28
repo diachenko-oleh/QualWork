@@ -55,10 +55,11 @@ fun TreatMainPage(
     onAddCourseClick: () -> Unit,
     onCourseClick: (Long) -> Unit,
     viewModel: CourseViewModel = hiltViewModel(),
-    courseInfoViewModel: CourseInfoViewModel = hiltViewModel()
+    courseInfoViewModel: CourseInfoViewModel = hiltViewModel(),
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val nextDoseTimes = courseInfoViewModel.nextDoseTime
+
 
     QualWorkTheme {
         Scaffold(
@@ -138,6 +139,7 @@ fun CourseCard(
     modifier: Modifier = Modifier
 ) {
     val medication = medicationWithSchedules.medication
+
 
     Card(
         modifier = modifier

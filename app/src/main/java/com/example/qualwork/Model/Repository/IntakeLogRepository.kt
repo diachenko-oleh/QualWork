@@ -2,6 +2,7 @@ package com.example.qualwork.Model.Repository
 
 import android.util.Log
 import com.example.qualwork.Model.DAO.IntakeLogDao
+import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.Schedule
 import kotlinx.coroutines.flow.Flow
@@ -14,7 +15,8 @@ import java.util.Locale
 import javax.inject.Inject
 
 class IntakeLogRepository @Inject constructor(
-    private val intakeLogDao: IntakeLogDao
+    private val intakeLogDao: IntakeLogDao,
+    private  val scheduleDao: ScheduleDao
 ) {
     suspend fun logIntake(
         schedule: Schedule,
@@ -28,7 +30,7 @@ class IntakeLogRepository @Inject constructor(
 
         Log.d("INTAKE_DEBUG", "Saving log: plannedDoseTime=$planned, string=${planned.toString()}")
 
-        return intakeLogDao.insert(
+        val result = intakeLogDao.insert(
             IntakeLog(
                 scheduleId = schedule.id,
                 plannedDoseTime = planned,
@@ -36,6 +38,14 @@ class IntakeLogRepository @Inject constructor(
                 taken = taken
             )
         )
+
+        if (taken) {
+            schedule.medAmount?.let { current ->
+                val updated = (current - schedule.dosage).coerceAtLeast(0)
+                updateMedAmount(schedule.id, updated)
+            }
+        }
+        return result
     }
 
     suspend fun logMissedIntake(
@@ -56,8 +66,11 @@ class IntakeLogRepository @Inject constructor(
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
         intakeLogDao.getByScheduleId(scheduleId)
 
+    suspend fun updateMedAmount(scheduleId: Long, amount: Int) {
+        scheduleDao.updateMedAmount(scheduleId, amount)
+    }
     suspend fun checkIfTaken(scheduleId: Long, plannedDoseTime: LocalDateTime): Boolean {
-        val dateString = plannedDoseTime.toLocalDate().toString() // "yyyy-MM-dd"
+        val dateString = plannedDoseTime.toLocalDate().toString()
         return intakeLogDao.isTaken(scheduleId, dateString) > 0
     }
 }

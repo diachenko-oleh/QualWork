@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,8 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -250,6 +254,43 @@ private fun Step1Content(viewModel: CourseViewModel){
                 }
             }
         }
+        HorizontalDivider()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Дозування: ${viewModel.dosage} ${viewModel.medicationForm.unit}",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Row {
+                IconButton(
+                    onClick = { if (viewModel.dosage > 1) viewModel.onDosageChange(viewModel.dosage - 1) }
+                ) {
+                    Icon(Icons.Rounded.Remove, contentDescription = "Менше")
+                }
+                IconButton(
+                    onClick = { viewModel.onDosageChange(viewModel.dosage + 1) }
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Більше")
+                }
+            }
+        }
+
+
+
+        // кількість препарату в наявності
+        OutlinedTextField(
+            value = viewModel.medAmount?.toString() ?: "",
+            onValueChange = { input ->
+                viewModel.onMedAmountChange(input.toIntOrNull())
+            },
+            label = { Text("Кількість в наявності (${viewModel.medicationForm.unit})") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -262,29 +303,6 @@ private fun Step2Content(viewModel: CourseViewModel) {
     var activeTimeIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.SpaceBetween,
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Text(
-//                text = "Дозування: ${viewModel.dosage} ${viewModel.medicationForm.unit}",
-//                style = MaterialTheme.typography.titleMedium
-//            )
-//            Row {
-//                IconButton(
-//                    onClick = { if (viewModel.dosage > 1) viewModel.onDosageChange(viewModel.dosage - 1) }
-//                ) {
-//                    Icon(Icons.Rounded.Remove, contentDescription = "Менше")
-//                }
-//                IconButton(
-//                    onClick = { viewModel.onDosageChange(viewModel.dosage + 1) }
-//                ) {
-//                    Icon(Icons.Rounded.Add, contentDescription = "Більше")
-//                }
-//            }
-//        }
-
         HorizontalDivider()
 
         ExposedDropdownMenuBox(

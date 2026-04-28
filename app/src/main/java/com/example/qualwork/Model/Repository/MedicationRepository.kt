@@ -96,6 +96,7 @@ class MedicationRepository @Inject constructor(
         return intakeTimeDao.getTimesForSchedule(scheduleId)
             .map { LocalTime.parse(it.time) }
     }
+
     fun getAllWithSchedules(): Flow<List<MedicationWithSchedules>> =
         medicationDao.getAllWithSchedules()
 

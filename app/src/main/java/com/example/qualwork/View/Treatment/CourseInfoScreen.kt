@@ -48,14 +48,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.qualwork.Model.Entity.DayStatus
 import com.example.qualwork.Model.Entity.status
+import com.example.qualwork.ViewModel.CourseInfoViewModel
 import com.example.qualwork.ViewModel.formatDate
 import java.time.LocalDate
 import java.time.ZoneId
@@ -68,15 +73,21 @@ fun CourseInfoScreen(
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit,
     onIntakeClick: (Long, Long) -> Unit,
-    viewModel: CourseViewModel = hiltViewModel()
+    viewModel: CourseViewModel = hiltViewModel(),
+    courseInfoViewModel: CourseInfoViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
-    val courseData = courses.find { it.schedules.any { s -> s.id == courseId } }
-        ?: return
+    val courseData = courses.find { it.schedules.any { s -> s.id == courseId } } ?: return
     val schedule = courseData.schedules.first()
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val nextDoseTimes = courseInfoViewModel.nextDoseTime
+    val medAmounts by viewModel.medAmounts.collectAsStateWithLifecycle()
+    val medAmount = medAmounts[schedule.id]
+
     LaunchedEffect(schedule.id) {
         viewModel.startWatchingActiveIntake(schedule.id)
+        viewModel.loadCourse(schedule.id)
     }
     val activeIntakeTime = viewModel.activeIntakeTime
     val calendarStats by viewModel.getCalendarStats(
@@ -99,7 +110,7 @@ fun CourseInfoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Інформація про курс") },
+                title = { Text("Інформація про курс прийому") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -126,7 +137,29 @@ fun CourseInfoScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
             )
-        }
+        },
+        floatingActionButton = {
+            activeIntakeTime?.let { time ->
+                val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        val doseTimeMillis = LocalDate.now()
+                            .atTime(time)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                        onIntakeClick(schedule.id, doseTimeMillis)
+                    },
+                    icon = {
+                        Icon(Icons.Rounded.Medication, contentDescription = null)
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    text = { Text("Прийом за $formattedTime") }
+                )
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
         if (courseData == null) {
             Box(
@@ -157,15 +190,29 @@ fun CourseInfoScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = medication.name,
                         style = MaterialTheme.typography.titleLarge
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = medication.form.displayName,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    InfoRow("Дозування:", "${schedule.dosage} ${medication.form.unit}")
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    medAmount?.let {
+                        InfoRow("Залишилось:", "$it ${medication.form.unit}")
+                    }
                 }
             }
 
@@ -181,7 +228,17 @@ fun CourseInfoScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     HorizontalDivider()
-                    InfoRow("Дозування", "${schedule.dosage} ${medication.form.unit}")
+                    viewModel.courseIntakeTimes.forEachIndexed { index, time ->
+                        InfoRow(
+                            "${index + 1}-й прийом",
+                            time.substring(0, 5)
+                        )
+                    }
+                    Text(
+                        text = "Час наступного прийому:\n${schedule.id?.let { nextDoseTimes[it] }}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
@@ -205,24 +262,13 @@ fun CourseInfoScreen(
                 }
             }
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Час наступного прийому",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                }
-            }
             Text(
                 text = "Статистика прийому",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Center
             )
-
             LazyColumn {
                 items(calendarStats) { week ->
                     Row(
@@ -241,8 +287,6 @@ fun CourseInfoScreen(
                     }
                 }
             }
-
-
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
@@ -271,8 +315,8 @@ fun CourseInfoScreen(
             }
 
 
-            activeIntakeTime?.let { time ->
-                val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
+            /*activeIntakeTime?.let { time ->
+
                 Button(
                     onClick = {
                         val doseTimeMillis = LocalDate.now()
@@ -286,7 +330,7 @@ fun CourseInfoScreen(
                 ) {
                     Text("Записати прийом за $formattedTime")
                 }
-            }
+            }*/
         }
     }
 }
@@ -317,9 +361,9 @@ fun DayStatCard(
     var showDialog by remember { mutableStateOf(false) }
 
     val backgroundColor = when (stat.status) {
-        DayStatus.ALL_TAKEN -> Color(0xFF4CAF50)
-        DayStatus.ALL_MISSED -> Color(0xFFF44336)
-        DayStatus.PARTIAL -> Color(0xFFFF9800)
+        DayStatus.ALL_TAKEN -> com.example.qualwork.View.theme.green
+        DayStatus.ALL_MISSED -> com.example.qualwork.View.theme.red
+        DayStatus.PARTIAL -> com.example.qualwork.View.theme.yellow
         DayStatus.FUTURE -> MaterialTheme.colorScheme.surfaceVariant
     }
 
@@ -345,7 +389,10 @@ fun DayStatCard(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = {
-                Text(stat.date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")))
+                Text(
+                    text=stat.date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                    textAlign = TextAlign.Center
+                )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -355,18 +402,19 @@ fun DayStatCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Очікувався: ${intake.plannedTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
+
+                            intake.actualTime?.let { actual ->
+                                Text(
+                                    text = "Прийнято: ${actual.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+                                )
+                            }
+
                             Text(
                                 text = if (intake.taken) "✓" else "✗",
-                                color = if (intake.taken) Color(0xFF4CAF50) else Color(0xFFF44336)
+                                color = if (intake.taken) com.example.qualwork.View.theme.green else com.example.qualwork.View.theme.red
                             )
                         }
-                        intake.actualTime?.let { actual ->
-                            Text(
-                                text = "Прийнято: ${actual.format(DateTimeFormatter.ofPattern("HH:mm"))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+
                     }
                 }
             },

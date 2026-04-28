@@ -3,6 +3,7 @@ package com.example.qualwork.ViewModel
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -46,7 +47,18 @@ class CourseViewModel @Inject constructor(
     private val userPreferences: UserPreferences
 ) : ViewModel() {
     private var editingScheduleId: Long? = null
-
+    val medAmounts: StateFlow<Map<Long, Int?>> =  medRepository.getAllWithSchedules()
+            .map { courses ->
+                courses.flatMap { it.schedules }
+                    .associate { it.id to it.medAmount }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyMap()
+            )
+    var courseIntakeTimes by mutableStateOf<List<String>>(emptyList())
+        private set
     fun loadCourse(courseId: Long) {
         viewModelScope.launch {
             val courseData = medRepository.getAllWithSchedules().first()
@@ -68,7 +80,7 @@ class CourseViewModel @Inject constructor(
             val times = medRepository.getIntakeTimes(schedule.id)
 
             intakeTimes = times.map { formatTime(it) }
-
+            courseIntakeTimes = times.map { it.toString().substring(0, 5) }
             frequencyPerDay = intakeTimes.size
         }
     }
@@ -110,7 +122,7 @@ class CourseViewModel @Inject constructor(
         private set
 
     //збереження тривалості
-    var startDate by mutableStateOf(System.currentTimeMillis())
+    var startDate by mutableLongStateOf(System.currentTimeMillis())
         private set
     var endDate by mutableStateOf<Long?>(
         Calendar.getInstance().apply {
@@ -166,6 +178,9 @@ class CourseViewModel @Inject constructor(
     fun onMedAmountChange(value: Int?) {
         medAmount = value
     }
+    fun onDosageChange(value: Int) {
+        dosage = value
+    }
 
     private fun recalculateEndDate() {
         val d = duration ?: return
@@ -178,9 +193,9 @@ class CourseViewModel @Inject constructor(
             CourseDuration.WEEK_1 -> calendar.add(Calendar.DAY_OF_YEAR, 6)
             CourseDuration.WEEK_2 -> calendar.add(Calendar.DAY_OF_YEAR, 13)
             CourseDuration.WEEK_3 -> calendar.add(Calendar.DAY_OF_YEAR, 20)
-            CourseDuration.MONTH_1 -> calendar.add(Calendar.MONTH, 1).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
-            CourseDuration.MONTH_2 -> calendar.add(Calendar.MONTH, 2).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
-            CourseDuration.MONTH_3 -> calendar.add(Calendar.MONTH, 3).also { calendar.add(Calendar.DAY_OF_YEAR, -1) }
+            CourseDuration.MONTH_1 -> calendar.add(Calendar.DAY_OF_YEAR, 27)
+            CourseDuration.MONTH_2 -> calendar.add(Calendar.DAY_OF_YEAR, 55)
+            CourseDuration.MONTH_3 -> calendar.add(Calendar.DAY_OF_YEAR, 83)
         }
 
         endDate = calendar.timeInMillis
