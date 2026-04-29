@@ -10,10 +10,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
+import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.IntakeLogStat
 import com.example.qualwork.Model.Entity.MedicationForm
+import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Repository.IntakeLogRepository
@@ -43,6 +45,7 @@ class CourseViewModel @Inject constructor(
     private val intakeRepository: IntakeLogRepository,
     private val intakeLogDao: IntakeLogDao,
     private val intakeTimeDao: IntakeTimeDao,
+    private val scheduleDao: ScheduleDao,
     private val notificationScheduler: NotificationScheduler,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
@@ -177,6 +180,20 @@ class CourseViewModel @Inject constructor(
     }
     fun onMedAmountChange(value: Int?) {
         medAmount = value
+    }
+    fun refillMedAmount(amountToAdd: Int,schedule: Schedule) {
+        if (amountToAdd <= 0) return
+
+        val current = medAmount ?: 0
+        val newAmount = current + amountToAdd
+
+        medAmount = newAmount
+
+        viewModelScope.launch {
+            schedule?.let {
+                scheduleDao.updateMedAmount(it.id, newAmount)
+            }
+        }
     }
     fun onDosageChange(value: Int) {
         dosage = value

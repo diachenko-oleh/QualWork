@@ -88,6 +88,9 @@ class MedicationRepository @Inject constructor(
         )
     }
 
+    suspend fun getMedicationById(id: Long): Medication? {
+        return medicationDao.getById(id)
+    }
     suspend fun deleteCourse(scheduleId: Long) {
         val schedule = scheduleDao.getById(scheduleId) ?: return
         medicationDao.delete(Medication(id = schedule.medicationId, name = "", form = MedicationForm.TABLET))

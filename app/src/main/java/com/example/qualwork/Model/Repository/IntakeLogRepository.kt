@@ -16,13 +16,13 @@ import javax.inject.Inject
 
 class IntakeLogRepository @Inject constructor(
     private val intakeLogDao: IntakeLogDao,
-    private  val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao
 ) {
     suspend fun logIntake(
         schedule: Schedule,
         plannedTime: LocalTime,
         actualTime: LocalTime?,
-        taken: Boolean): Long
+        taken: Boolean): Pair<Long, Int?>
     {
         val today = LocalDate.now()
         val planned = today.atTime(plannedTime)
@@ -38,14 +38,15 @@ class IntakeLogRepository @Inject constructor(
                 taken = taken
             )
         )
+        var updatedAmount: Int? = null
 
         if (taken) {
             schedule.medAmount?.let { current ->
-                val updated = (current - schedule.dosage).coerceAtLeast(0)
-                updateMedAmount(schedule.id, updated)
+                updatedAmount = (current - schedule.dosage).coerceAtLeast(0)
+                updateMedAmount(schedule.id, updatedAmount)
             }
         }
-        return result
+        return result to updatedAmount
     }
 
     suspend fun logMissedIntake(

@@ -10,6 +10,7 @@ import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Entity.Medication
 import com.example.qualwork.Model.Entity.Schedule
+import com.example.qualwork.Model.Notification.LowAmountNotifier
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
@@ -24,10 +25,8 @@ import javax.inject.Inject
 @HiltViewModel
 class IntakeViewModel @Inject constructor(
     private val intakeLogRepository: IntakeLogRepository,
-    private val notificationScheduler: NotificationScheduler,
     private val medicationRepository: MedicationRepository,
-    private val intakeLogDao: IntakeLogDao,
-    private val intakeTimeDao: IntakeTimeDao
+    private val lowMedicationNotifier: LowAmountNotifier,
 ) : ViewModel() {
 
     var medication by mutableStateOf<Medication?>(null)
@@ -42,15 +41,20 @@ class IntakeViewModel @Inject constructor(
     fun takeMedication() {
         val currentSchedule = schedule ?: return
         val plannedTime = nextDoseTime ?: return
+
         viewModelScope.launch {
             isLoading = true
             try {
-                intakeLogRepository.logIntake(
+                val (_, updatedAmount) = intakeLogRepository.logIntake(
                     schedule = currentSchedule,
                     plannedTime = plannedTime,
                     actualTime = LocalTime.now(),
                     taken = true
                 )
+                if (updatedAmount != null && updatedAmount <= currentSchedule.dosage) {
+                    notifyLowMedication(currentSchedule)
+                }
+
                 actionCompleted = true
             } finally {
                 isLoading = false
@@ -77,7 +81,13 @@ class IntakeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun notifyLowMedication(schedule: Schedule) {
+        val medication = medicationRepository.getMedicationById(schedule.medicationId)
 
+        medication?.let {
+            lowMedicationNotifier.show(it.name)
+        }
+    }
     var nextDoseTime by mutableStateOf<LocalTime?>(null)
         private set
 

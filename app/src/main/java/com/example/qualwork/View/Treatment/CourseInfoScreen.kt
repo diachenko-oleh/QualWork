@@ -1,6 +1,5 @@
 package com.example.qualwork.View.Treatment
 
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Delete
@@ -48,12 +45,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Entity.DayIntakeStat
 import com.example.qualwork.ViewModel.CourseViewModel
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.rounded.Medication
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -81,9 +81,13 @@ fun CourseInfoScreen(
     val schedule = courseData.schedules.first()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+
     val nextDoseTimes = courseInfoViewModel.nextDoseTime
     val medAmounts by viewModel.medAmounts.collectAsStateWithLifecycle()
     val medAmount = medAmounts[schedule.id]
+    val shouldShowRefill = medAmount != null && medAmount <= schedule.dosage
+
+
 
     LaunchedEffect(schedule.id) {
         viewModel.startWatchingActiveIntake(schedule.id)
@@ -181,6 +185,7 @@ fun CourseInfoScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            var showRefillDialog by remember { mutableStateOf(false) }
             // Препарат
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -212,6 +217,18 @@ fun CourseInfoScreen(
 
                     medAmount?.let {
                         InfoRow("Залишилось:", "$it ${medication.form.unit}")
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    if (shouldShowRefill) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = { showRefillDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Поповнити")
+                        }
                     }
                 }
             }
@@ -313,24 +330,45 @@ fun CourseInfoScreen(
                     }
                 )
             }
+            if (showRefillDialog) {
+                var input by remember { mutableStateOf("") }
 
-
-            /*activeIntakeTime?.let { time ->
-
-                Button(
-                    onClick = {
-                        val doseTimeMillis = LocalDate.now()
-                            .atTime(time)
-                            .atZone(ZoneId.systemDefault())
-                            .toInstant()
-                            .toEpochMilli()
-                        onIntakeClick(schedule.id, doseTimeMillis)
+                AlertDialog(
+                    onDismissRequest = { showRefillDialog = false },
+                    title = { Text("Поповнення препарату") },
+                    text = {
+                        OutlinedTextField(
+                            value = input,
+                            onValueChange = { input = it },
+                            label = { Text("Кількість") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            )
+                        )
                     },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Записати прийом за $formattedTime")
-                }
-            }*/
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val value = input.toIntOrNull()
+                                value?.let {
+                                    if (it > 0) {
+                                        viewModel.refillMedAmount(it, schedule)
+                                        showRefillDialog = false
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("Зберегти")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showRefillDialog = false }) {
+                            Text("Скасувати")
+                        }
+                    }
+                )
+            }
         }
     }
 }

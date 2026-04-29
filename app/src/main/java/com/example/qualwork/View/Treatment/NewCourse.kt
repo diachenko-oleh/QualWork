@@ -278,8 +278,6 @@ private fun Step1Content(viewModel: CourseViewModel){
             }
         }
 
-
-
         // кількість препарату в наявності
         OutlinedTextField(
             value = viewModel.medAmount?.toString() ?: "",
