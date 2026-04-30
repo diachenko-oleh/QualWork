@@ -7,6 +7,7 @@ import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.DAO.UserDao
 import com.example.qualwork.Model.Notification.NotificationScheduler
+import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.Repository.UserRepository
@@ -44,15 +45,17 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideUserRepository(
-        userDao: UserDao
-    ): UserRepository = UserRepository(userDao)
+        userDao: UserDao,
+        firestoreRepository: FirestoreRepository
+    ): UserRepository = UserRepository(userDao,firestoreRepository)
     @Provides
     @Singleton
     fun provideMedicationRepository(
         medicationDao: MedicationDao,
         intakeTimeDao: IntakeTimeDao,
-        scheduleDao: ScheduleDao
-    ): MedicationRepository = MedicationRepository(medicationDao, intakeTimeDao, scheduleDao)
+        scheduleDao: ScheduleDao,
+        firestoreRepository: FirestoreRepository
+    ): MedicationRepository = MedicationRepository(medicationDao, intakeTimeDao, scheduleDao,firestoreRepository)
     @Provides
     @Singleton
     fun provideNotificationScheduler(
@@ -62,6 +65,7 @@ object DatabaseModule {
     @Singleton
     fun provideIntakeLogRepository(
         intakeLogDao: IntakeLogDao,
-        scheduleDao: ScheduleDao
-    ): IntakeLogRepository = IntakeLogRepository(intakeLogDao,scheduleDao)
+        scheduleDao: ScheduleDao,
+        firestoreRepository: FirestoreRepository
+    ): IntakeLogRepository = IntakeLogRepository(intakeLogDao,scheduleDao,firestoreRepository)
 }

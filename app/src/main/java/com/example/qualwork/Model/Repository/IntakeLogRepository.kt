@@ -16,7 +16,8 @@ import javax.inject.Inject
 
 class IntakeLogRepository @Inject constructor(
     private val intakeLogDao: IntakeLogDao,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    private val firestoreRepository: FirestoreRepository
 ) {
     suspend fun logIntake(
         schedule: Schedule,
@@ -28,16 +29,20 @@ class IntakeLogRepository @Inject constructor(
         val planned = today.atTime(plannedTime)
         val actual = actualTime?.let { today.atTime(it) }
 
-        Log.d("INTAKE_DEBUG", "Saving log: plannedDoseTime=$planned, string=${planned.toString()}")
+        Log.d("INTAKE_DEBUG", "Saving log: plannedDoseTime=$planned, string=${planned}")
 
-        val result = intakeLogDao.insert(
-            IntakeLog(
-                scheduleId = schedule.id,
-                plannedDoseTime = planned,
-                actualDoseTime = actual,
-                taken = taken
-            )
+        val intakeLog = IntakeLog(
+            scheduleId = schedule.id,
+            plannedDoseTime = planned,
+            actualDoseTime = actual,
+            taken = taken
         )
+
+        val id = intakeLogDao.insert(intakeLog)
+        val savedLog = intakeLog.copy(id = id)
+
+        firestoreRepository.syncIntakeLog(savedLog, schedule.userId)
+
         var updatedAmount: Int? = null
 
         if (taken) {
@@ -46,7 +51,7 @@ class IntakeLogRepository @Inject constructor(
                 updateMedAmount(schedule.id, updatedAmount)
             }
         }
-        return result to updatedAmount
+        return id to updatedAmount
     }
 
     suspend fun logMissedIntake(
@@ -55,14 +60,21 @@ class IntakeLogRepository @Inject constructor(
     ): Long {
         val planned = LocalDate.now().atTime(plannedTime)
 
-        return intakeLogDao.insert(
-            IntakeLog(
-                scheduleId = scheduleId,
-                plannedDoseTime = planned,
-                actualDoseTime = null,
-                taken = false
-            )
+        val intakeLog = IntakeLog(
+            scheduleId = scheduleId,
+            plannedDoseTime = planned,
+            actualDoseTime = null,
+            taken = false
         )
+        val id = intakeLogDao.insert(intakeLog)
+        val savedLog = intakeLog.copy(id = id)
+
+        val schedule = scheduleDao.getById(scheduleId)
+        schedule?.let {
+            firestoreRepository.syncIntakeLog(savedLog, it.userId)
+        }
+
+        return id
     }
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
         intakeLogDao.getByScheduleId(scheduleId)

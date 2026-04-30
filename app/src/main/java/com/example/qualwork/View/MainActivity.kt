@@ -49,6 +49,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import javax.inject.Inject
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

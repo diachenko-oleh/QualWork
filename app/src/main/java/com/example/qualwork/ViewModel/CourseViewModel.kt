@@ -47,8 +47,10 @@ class CourseViewModel @Inject constructor(
     private val intakeTimeDao: IntakeTimeDao,
     private val scheduleDao: ScheduleDao,
     private val notificationScheduler: NotificationScheduler,
-    private val userPreferences: UserPreferences
-) : ViewModel() {
+    private val userPreferences: UserPreferences,
+
+) : ViewModel()
+{
     private var editingScheduleId: Long? = null
     val medAmounts: StateFlow<Map<Long, Int?>> =  medRepository.getAllWithSchedules()
             .map { courses ->

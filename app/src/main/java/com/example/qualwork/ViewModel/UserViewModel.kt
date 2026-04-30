@@ -1,6 +1,5 @@
 package com.example.qualwork.ViewModel
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -79,6 +78,63 @@ class UserViewModel @Inject constructor(
             currentUser?.let { user ->
                 currentUser = userRepository.updateName(user.id, newName.trim())
             }
+        }
+    }
+    var isConnecting by mutableStateOf(false)
+        private set
+    var connectError by mutableStateOf<String?>(null)
+        private set
+    var connectSuccess by mutableStateOf(false)
+        private set
+
+    fun connectToPatient(code: String) {
+        viewModelScope.launch {
+            isConnecting = true
+            connectError = null
+            connectSuccess = false
+
+            val currentId = currentUser?.id ?: return@launch
+
+            if (code == currentUser?.code) {
+                connectError = "Не можна підключити самого себе"
+                isConnecting = false
+                return@launch
+            }
+
+            val success = userRepository.connectToPatient(currentId, code)
+
+            if (success) {
+                connectSuccess = true
+            } else {
+                connectError = "Код не знайдено або вже використано"
+            }
+
+            isConnecting = false
+        }
+    }
+
+    var patients by mutableStateOf<List<User>>(emptyList())
+        private set
+    var supervisors by mutableStateOf<List<User>>(emptyList())
+        private set
+    var isLoadingLinks by mutableStateOf(false)
+        private set
+
+    fun loadLinks() {
+        viewModelScope.launch {
+            isLoadingLinks = true
+            val currentId = currentUser?.id ?: return@launch
+            patients = userRepository.getPatients(currentId)
+            supervisors = userRepository.getSupervisors(currentId)
+            isLoadingLinks = false
+        }
+    }
+
+    fun removeLink(otherUserId: String) {
+        viewModelScope.launch {
+            val currentId = currentUser?.id ?: return@launch
+            val success = userRepository.removeLink(currentId, otherUserId)
+            if (success) loadLinks()
         }
     }
 }

@@ -2,12 +2,11 @@ package com.example.qualwork.Model.Repository
 
 import com.example.qualwork.Model.DAO.UserDao
 import com.example.qualwork.Model.Entity.User
-import com.example.qualwork.Model.UserPreferences
-import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 class UserRepository(
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val firestoreRepository: FirestoreRepository
 ) {
     suspend fun createUser(name: String): User {
         val user = User(
@@ -16,8 +15,19 @@ class UserRepository(
             code = generateUniqueCode()
         )
         userDao.insert(user)
+        firestoreRepository.syncUser(user)
         return user
     }
+
+    suspend fun findUserByCode(code: String): User? =
+        firestoreRepository.findUserByCode(code)
+
+    suspend fun connectToPatient(supervisorId: String, code: String): Boolean =
+        firestoreRepository.connectToPatient(supervisorId, code)
+
+    suspend fun getPatientIds(supervisorId: String): List<String> =
+        firestoreRepository.getPatientIds(supervisorId)
+
 
     suspend fun getById(id: String): User? = userDao.getById(id)
     suspend fun getByCode(code: String): User? = userDao.getByCode(code)
@@ -37,6 +47,15 @@ class UserRepository(
         userDao.update(updatedUser)
         return updatedUser
     }
+
+    suspend fun getPatients(supervisorId: String): List<User> =
+        firestoreRepository.getPatients(supervisorId)
+
+    suspend fun getSupervisors(patientId: String): List<User> =
+        firestoreRepository.getSupervisors(patientId)
+
+    suspend fun removeLink(userId1: String, userId2: String): Boolean =
+        firestoreRepository.removeLink(userId1, userId2)
 }
 
 object IdGenerator {

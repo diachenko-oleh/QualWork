@@ -15,7 +15,8 @@ import javax.inject.Inject
 class MedicationRepository @Inject constructor(
     private val medicationDao: MedicationDao,
     private val intakeTimeDao: IntakeTimeDao,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    private val firestoreRepository: FirestoreRepository
 ) {
     suspend fun saveCourse(
         name: String,
@@ -40,14 +41,29 @@ class MedicationRepository @Inject constructor(
                 medAmount = medAmount
             )
         )
-        intakeTimeDao.insertAll(
-            intakeTimes.map {
-                IntakeTimeEntity(
-                    scheduleId = scheduleId,
-                    time = it.toString()
-                )
-            }
+        val intakeTimeEntities = intakeTimes.map {
+            IntakeTimeEntity(scheduleId = scheduleId, time = it.toString())
+        }
+        val intakeTimeIds = intakeTimeDao.insertAll(intakeTimeEntities)
+
+        val savedMedication = Medication(id = medicationId, name = name, form = form)
+        val savedSchedule = Schedule(
+            id = scheduleId,
+            medicationId = medicationId,
+            startDate = startDate,
+            endDate = endDate,
+            dosage = dosage,
+            userId = userId,
+            medAmount = medAmount
         )
+        val savedIntakeTimes = intakeTimeEntities.mapIndexed { index, entity ->
+            entity.copy(id = intakeTimeIds[index])
+        }
+
+        firestoreRepository.syncMedication(savedMedication, userId)
+        firestoreRepository.syncSchedule(savedSchedule)
+        firestoreRepository.syncIntakeTimes(scheduleId, userId, savedIntakeTimes)
+
         return scheduleId
     }
 
@@ -78,14 +94,25 @@ class MedicationRepository @Inject constructor(
             )
         )
         intakeTimeDao.deleteBySchedule(scheduleId)
-        intakeTimeDao.insertAll(
-            intakeTimes.map {
-                IntakeTimeEntity(
-                    scheduleId = scheduleId,
-                    time = it.toString()
-                )
-            }
+        val intakeTimeEntities = intakeTimes.map {
+            IntakeTimeEntity(scheduleId = scheduleId, time = it.toString())
+        }
+        val intakeTimeIds = intakeTimeDao.insertAll(intakeTimeEntities)
+        val savedIntakeTimes = intakeTimeEntities.mapIndexed { index, entity ->
+            entity.copy(id = intakeTimeIds[index])
+        }
+
+        firestoreRepository.syncMedication(
+            Medication(id = schedule.medicationId, name = name, form = form),
+            schedule.userId
         )
+        firestoreRepository.syncSchedule(schedule.copy(
+            startDate = startDate,
+            endDate = endDate,
+            dosage = dosage,
+            medAmount = medAmount
+        ))
+        firestoreRepository.syncIntakeTimes(scheduleId, schedule.userId, savedIntakeTimes)
     }
 
     suspend fun getMedicationById(id: Long): Medication? {

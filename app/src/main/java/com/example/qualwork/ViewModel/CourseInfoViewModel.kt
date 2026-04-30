@@ -9,13 +9,19 @@ import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.Notification.NotificationScheduler
+import com.example.qualwork.Model.Relation.MedicationWithSchedules
+import com.example.qualwork.Model.Relation.PatientCourseGroup
+import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
+import com.example.qualwork.Model.Repository.UserRepository
 import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,25 +36,23 @@ class CourseInfoViewModel @Inject constructor(
     private val intakeLogDao: IntakeLogDao,
     private val intakeTimeDao: IntakeTimeDao,
     private val notificationScheduler: NotificationScheduler,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val firestoreRepository: FirestoreRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
-    val medAmounts: StateFlow<Map<Long, Int?>> =
-        medRepository.getAllWithSchedules()
-            .map { courses ->
-                courses.flatMap { it.schedules }
-                    .associate { it.id to it.medAmount }
-            }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyMap()
-            )
+    var patientCourseGroups by mutableStateOf<List<PatientCourseGroup>>(emptyList())
+        private set
+    var isLoadingPatientCourses by mutableStateOf(false)
+        private set
+    private val _userId = MutableStateFlow("")
 
     init {
         viewModelScope.launch {
+            _userId.value = userPreferences.currentUserId.first() ?: ""
+
             combine(
                 medRepository.getAllWithSchedules(),
                 intakeLogDao.observeAll()
@@ -110,5 +114,70 @@ class CourseInfoViewModel @Inject constructor(
         return sortedTimes.first() to true
 
 
+    }
+
+    fun loadPatientCourses() {
+        viewModelScope.launch {
+            val currentUserId = _userId.value.ifEmpty {
+                userPreferences.currentUserId.first() ?: return@launch
+            }
+            isLoadingPatientCourses = true
+            try {
+                val patients = userRepository.getPatients(currentUserId)
+
+                patientCourseGroups = patients.map { patient ->
+                    val (medications, schedules) = firestoreRepository.getPatientFullData(patient.id)
+                    val intakeTimes = firestoreRepository.getPatientIntakeTimes(patient.id)
+                    val intakeLogs = firestoreRepository.getPatientIntakeLogs(patient.id)
+
+                    val patientNextDoseTimes = schedules.associate { schedule ->
+                        val scheduleTimes = intakeTimes
+                            .filter { it.scheduleId == schedule.id }
+                            .map { LocalTime.parse(it.time) }
+                            .sorted()
+
+                        val today = LocalDate.now().toString()
+                        val nowTime = LocalTime.now()
+
+                        val takenTimes = intakeLogs
+                            .filter { log ->
+                                log.scheduleId == schedule.id &&
+                                        log.taken &&
+                                        log.plannedDoseTime.toLocalDate().toString() == today
+                            }
+                            .map { it.plannedDoseTime.toLocalTime() }
+                            .toSet()
+                        val nextToday = scheduleTimes.firstOrNull {
+                            !it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes
+                        }
+
+                        val result = when {
+                            scheduleTimes.isEmpty() -> "—"
+                            nextToday != null -> "${nextToday.toString().substring(0, 5)} (сьогодні)"
+                            else -> "${scheduleTimes.first().toString().substring(0, 5)} (завтра)"
+                        }
+
+                        schedule.id to result
+                    }
+                    val courses = medications.map { medication ->
+                        MedicationWithSchedules(
+                            medication = medication,
+                            schedules = schedules.filter { it.medicationId == medication.id }
+                        )
+                    }.filter { it.schedules.isNotEmpty() }
+
+                    PatientCourseGroup(
+                        patientName = patient.name,
+                        patientId = patient.id,
+                        courses = courses,
+                        nextDoseTimes = patientNextDoseTimes
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("CourseInfoVM", "Помилка: $e")
+            } finally {
+                isLoadingPatientCourses = false
+            }
+        }
     }
 }

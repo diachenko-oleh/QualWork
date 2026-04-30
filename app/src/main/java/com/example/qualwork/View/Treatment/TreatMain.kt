@@ -1,5 +1,6 @@
 package com.example.qualwork.View.Treatment
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,9 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -34,8 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,7 +64,10 @@ fun TreatMainPage(
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val nextDoseTimes = courseInfoViewModel.nextDoseTime
-
+    val patientCourseGroups = courseInfoViewModel.patientCourseGroups
+    LaunchedEffect(Unit) {
+        courseInfoViewModel.loadPatientCourses()
+    }
 
     QualWorkTheme {
         Scaffold(
@@ -101,9 +109,25 @@ fun TreatMainPage(
                                onClick = { onCourseClick(item.schedules.first().id) }
                            )
                         }
-                        item {
-                            //NotificationTestCard(scheduler = viewModel.getScheduler())
-                        }
+//                        if (courseInfoViewModel.isLoadingPatientCourses) {
+//                            item {
+//                                Box(
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    contentAlignment = Alignment.Center
+//                                ) {
+//                                    CircularProgressIndicator()
+//                                }
+//                            }
+//                        }else {
+                            items(patientCourseGroups) { group ->
+                                CollapsibleCourseSection(
+                                    title = "Курси лікування: ${group.patientName}",
+                                    courses = group.courses,
+                                    nextDoseTimes = group.nextDoseTimes,
+                                    onCourseClick = onCourseClick
+                                )
+                            }
+                        //}
                     }
                 }
             }
@@ -184,6 +208,108 @@ fun CourseCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun CollapsibleCourseSection(
+    title: String,
+    courses: List<MedicationWithSchedules>,
+    nextDoseTimes: Map<Long, String?>,
+    isLoading: Boolean = false,
+    onCourseClick: (Long) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(true) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        Column {
+            // Заголовок секції
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "${courses.size} курс${
+                                when {
+                                    courses.size % 10 == 1 && courses.size % 100 != 11 -> ""
+                                    courses.size % 10 in 2..4 && courses.size % 100 !in 12..14 -> "и"
+                                    else -> "ів"
+                                }
+                            }",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded)
+                        Icons.Rounded.KeyboardArrowUp
+                    else
+                        Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Згорнути" else "Розгорнути"
+                )
+            }
+
+            // Вміст секції
+            AnimatedVisibility(visible = isExpanded) {
+                Column {
+                    HorizontalDivider()
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (courses.isEmpty()) {
+                        Text(
+                            text = "Немає активних курсів",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        courses.forEach { item ->
+                            val scheduleId = item.schedules.firstOrNull()?.id
+                            Box(modifier = Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 6.dp
+                            )) {
+                                CourseCard(
+                                    medicationWithSchedules = item,
+                                    nextDoseTime = scheduleId?.let { nextDoseTimes[it] },
+                                    onClick = { onCourseClick(item.schedules.first().id) }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
