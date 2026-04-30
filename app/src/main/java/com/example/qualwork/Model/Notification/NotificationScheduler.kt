@@ -26,7 +26,8 @@ class NotificationScheduler @Inject constructor(
         intakeTimes: List<LocalTime>,
         startDate: Long,
         endDate: Long?,
-        medAmount: Int?
+        userId: String,
+        userName: String
     ) {
         cancelNotifications(scheduleId)
 
@@ -39,7 +40,9 @@ class NotificationScheduler @Inject constructor(
                 NotificationWorker.KEY_UNIT to unit,
                 NotificationWorker.KEY_END_DATE to (endDate ?: -1L),
                 NotificationWorker.KEY_SCHEDULE_ID to scheduleId,
-                NotificationWorker.KEY_TIME to time.toString()
+                NotificationWorker.KEY_TIME to time.toString(),
+                "userId" to userId,
+                "userName" to userName
             )
 
             val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()

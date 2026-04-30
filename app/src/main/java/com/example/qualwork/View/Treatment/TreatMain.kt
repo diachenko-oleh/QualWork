@@ -1,5 +1,8 @@
 package com.example.qualwork.View.Treatment
 
+import android.Manifest
+import android.annotation.SuppressLint
+import androidx.annotation.RequiresPermission
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +34,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,28 +47,44 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.qualwork.Model.Notification.CaregiverNotificationHelper
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
-import com.example.qualwork.ViewModel.CourseInfoViewModel
+import com.example.qualwork.ViewModel.CourseListViewModel
 import com.example.qualwork.ViewModel.CourseViewModel
 
+@RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TreatMainPage(
     onAddCourseClick: () -> Unit,
     onCourseClick: (Long) -> Unit,
     viewModel: CourseViewModel = hiltViewModel(),
-    courseInfoViewModel: CourseInfoViewModel = hiltViewModel(),
+    courseListViewModel: CourseListViewModel = hiltViewModel(),
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
-    val nextDoseTimes = courseInfoViewModel.nextDoseTime
-    val patientCourseGroups = courseInfoViewModel.patientCourseGroups
+    val nextDoseTimes = courseListViewModel.nextDoseTime
+    val patientCourseGroups = courseListViewModel.patientCourseGroups
     LaunchedEffect(Unit) {
-        courseInfoViewModel.loadPatientCourses()
+        courseListViewModel.loadPatientCourses()
+    }
+    val context = LocalContext.current
+    LaunchedEffect(patientCourseGroups) {
+        val patientIds = patientCourseGroups.map { it.patientId }
+        courseListViewModel.startObservingMissedNotifications(patientIds) {
+                patientName, medicationName, time ->
+            CaregiverNotificationHelper.showMissedNotification(
+                context = context,
+                patientName = patientName,
+                medicationName = medicationName,
+                time = time
+            )
+        }
     }
 
     QualWorkTheme {

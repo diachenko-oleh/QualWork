@@ -121,6 +121,12 @@ class MedicationRepository @Inject constructor(
     suspend fun deleteCourse(scheduleId: Long) {
         val schedule = scheduleDao.getById(scheduleId) ?: return
         medicationDao.delete(Medication(id = schedule.medicationId, name = "", form = MedicationForm.TABLET))
+
+        firestoreRepository.deleteCourse(
+            scheduleId = scheduleId,
+            medicationId = schedule.medicationId,
+            userId = schedule.userId
+        )
     }
     suspend fun getIntakeTimes(scheduleId: Long): List<LocalTime> {
         return intakeTimeDao.getTimesForSchedule(scheduleId)

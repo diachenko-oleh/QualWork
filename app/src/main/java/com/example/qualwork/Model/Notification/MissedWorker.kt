@@ -5,22 +5,19 @@ import android.R
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.example.qualwork.Model.DAO.IntakeLogDao
-import com.example.qualwork.Model.Entity.IntakeLog
+import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
+import com.example.qualwork.Model.UserPreferences
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.time.LocalDate
+import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -28,11 +25,12 @@ import java.time.LocalTime
 class MissedWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val intakeRepository: IntakeLogRepository
+    private val intakeRepository: IntakeLogRepository,
+    private val firestoreRepository: FirestoreRepository,
+    //private val userPreferences: UserPreferences
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        Log.d("MISSED_DEBUG", "MissedWorker doWork() called!")
         val scheduleId = inputData.getLong("scheduleId", -1L)
         val medicationName = inputData.getString("medicationName") ?: return Result.failure()
 
@@ -40,15 +38,12 @@ class MissedWorker @AssistedInject constructor(
             ?.let { LocalDateTime.parse(it) }
             ?: return Result.failure()
 
-        Log.d("MISSED_DEBUG", "MissedWorker started: scheduleId=$scheduleId, time=$plannedDateTime")
+            //Log.d("MISSED_DEBUG", "MissedWorker started: scheduleId=$scheduleId, time=$plannedDateTime")
 
-        if (scheduleId == -1L){
-            Log.d("MISSED_DEBUG", "Invalid input, failure")
-            return Result.failure()
-        }
+        if (scheduleId == -1L) return Result.failure()
 
         val wasTaken = intakeRepository.checkIfTaken(scheduleId, plannedDateTime)
-        Log.d("MISSED_DEBUG", "wasTaken=$wasTaken")
+            //Log.d("MISSED_DEBUG", "wasTaken=$wasTaken")
 
         if (!wasTaken) {
             intakeRepository.logMissedIntake(
@@ -56,6 +51,17 @@ class MissedWorker @AssistedInject constructor(
                 plannedTime = plannedDateTime.toLocalTime()
             )
             showMissedNotification(medicationName,plannedDateTime.toLocalTime(), scheduleId)
+
+            val userId = inputData.getString("userId") ?: return Result.success()
+            val userName = inputData.getString("userName") ?: return Result.success()
+            val displayTime = String.format("%02d:%02d",plannedDateTime.hour,plannedDateTime.minute)
+
+            firestoreRepository.notifySupervisors(
+                patientId = userId,
+                patientName = userName,
+                medicationName = medicationName,
+                time = displayTime
+            )
         }
        return Result.success()
     }

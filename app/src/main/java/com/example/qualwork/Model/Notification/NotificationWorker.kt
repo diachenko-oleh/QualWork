@@ -29,6 +29,8 @@ class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
+
+
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
         val medicationName = inputData.getString(KEY_MEDICATION_NAME) ?: return Result.failure()
@@ -37,11 +39,16 @@ class NotificationWorker @AssistedInject constructor(
         val endDate = inputData.getLong(KEY_END_DATE, -1L)
         val scheduleId = inputData.getLong(KEY_SCHEDULE_ID, -1L)
         val timeString = inputData.getString(KEY_TIME) ?: return Result.failure()
+        val userId = inputData.getString("userId") ?: ""
+        val userName = inputData.getString("userName") ?: ""
 
 
         scheduleMissedCheck(
             scheduleId,
-            LocalDateTime.now().toString(), medicationName
+            LocalDateTime.now().toString(),
+            medicationName,
+            userId,
+            userName
         )
 
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
@@ -54,13 +61,21 @@ class NotificationWorker @AssistedInject constructor(
             return Result.failure()
         }
     }
-    private fun scheduleMissedCheck(scheduleId: Long, time: String, medicationName: String) {
+    private fun scheduleMissedCheck(
+        scheduleId: Long,
+        time: String,
+        medicationName: String,
+        userId: String,
+        userName: String
+    )  {
         Log.d("MISSED_DEBUG", "Scheduling missed check: scheduleId=$scheduleId, time=$time")
 
         val inputData = workDataOf(
             "scheduleId" to scheduleId,
             "time" to time,
-            "medicationName" to medicationName
+            "medicationName" to medicationName,
+            "userId" to userId,
+            "userName" to userName
         )
 
         val work = OneTimeWorkRequestBuilder<MissedWorker>()

@@ -8,6 +8,7 @@ import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Entity.User
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
@@ -30,6 +31,23 @@ class FirestoreRepository @Inject constructor() {
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Помилка синхронізації user: $e")
             }
+    }
+    suspend fun getUserById(userId: String): User? {
+        return try {
+            val doc = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
+            val data = doc.data ?: return null
+            User(
+                id = data["id"] as String,
+                name = data["name"] as String,
+                code = data["code"] as String
+            )
+        } catch (e: Exception) {
+            Log.e("Firestore", "Помилка отримання user: $e")
+            null
+        }
     }
     suspend fun findUserByCode(code: String): User? {
         return try {
@@ -216,6 +234,41 @@ class FirestoreRepository @Inject constructor() {
             }
     }
 
+    suspend fun deleteCourse(scheduleId: Long, medicationId: Long, userId: String) {
+        try {
+            // Видалити Schedule
+            firestore.collection("schedules")
+                .document("${userId}_${scheduleId}")
+                .delete()
+                .await()
+
+            // Видалити Medication
+            firestore.collection("medications")
+                .document("${userId}_${medicationId}")
+                .delete()
+                .await()
+
+            // Видалити IntakeTimes
+            val intakeTimes = firestore.collection("intake_times")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("scheduleId", scheduleId)
+                .get()
+                .await()
+            intakeTimes.documents.forEach { it.reference.delete() }
+
+            // Видалити IntakeLogs
+            val intakeLogs = firestore.collection("intake_logs")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("scheduleId", scheduleId)
+                .get()
+                .await()
+            intakeLogs.documents.forEach { it.reference.delete() }
+
+        } catch (e: Exception) {
+            Log.e("Firestore", "Помилка видалення курсу: $e")
+        }
+    }
+
     //intake time
 
     fun syncIntakeTimes(scheduleId: Long, userId: String, intakeTimes: List<IntakeTimeEntity>) {
@@ -340,6 +393,62 @@ class FirestoreRepository @Inject constructor() {
         }
     }
 
+    //notification
+
+    suspend fun notifySupervisors(
+        patientId: String,
+        patientName: String,
+        medicationName: String,
+        time: String
+    ): Boolean {
+        return try {
+            firestore.collection("missed_notifications")
+                .add(mapOf(
+                    "patientId" to patientId,
+                    "patientName" to patientName,
+                    "medicationName" to medicationName,
+                    "time" to time,
+                    "timestamp" to System.currentTimeMillis(),
+                    "seen" to false
+                ))
+                .await()
+            true
+        } catch (e: Exception) {
+            Log.e("Firestore", "Помилка сповіщення наглядача: $e")
+            false
+        }
+    }
+
+    fun observeMissedNotifications(
+        supervisorId: String,
+        onNewMissed: (patientName: String, medicationName: String, time: String, docId: String) -> Unit
+    ) {
+        firestore.collection("missed_notifications")
+            .whereEqualTo("seen", false)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                snapshot.documentChanges
+                    .filter { it.type == DocumentChange.Type.ADDED }
+                    .forEach { change ->
+                        val data = change.document.data
+                        val patientId = data["patientId"] as? String ?: return@forEach
+
+                        onNewMissed(
+                            data["patientName"] as? String ?: "",
+                            data["medicationName"] as? String ?: "",
+                            data["time"] as? String ?: "",
+                            change.document.id
+                        )
+                    }
+            }
+    }
+
+    fun markNotificationSeen(docId: String) {
+        firestore.collection("missed_notifications")
+            .document(docId)
+            .update("seen", true)
+    }
 
 
 

@@ -60,7 +60,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.qualwork.Model.Entity.DayStatus
 import com.example.qualwork.Model.Entity.status
-import com.example.qualwork.ViewModel.CourseInfoViewModel
+import com.example.qualwork.ViewModel.CourseListViewModel
 import com.example.qualwork.ViewModel.formatDate
 import java.time.LocalDate
 import java.time.ZoneId
@@ -74,7 +74,7 @@ fun CourseInfoScreen(
     onEditClick: (Long) -> Unit,
     onIntakeClick: (Long, Long) -> Unit,
     viewModel: CourseViewModel = hiltViewModel(),
-    courseInfoViewModel: CourseInfoViewModel = hiltViewModel()
+    courseListViewModel: CourseListViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val courseData = courses.find { it.schedules.any { s -> s.id == courseId } } ?: return
@@ -82,7 +82,7 @@ fun CourseInfoScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
 
-    val nextDoseTimes = courseInfoViewModel.nextDoseTime
+    val nextDoseTimes = courseListViewModel.nextDoseTime
     val medAmounts by viewModel.medAmounts.collectAsStateWithLifecycle()
     val medAmount = medAmounts[schedule.id]
     val shouldShowRefill = medAmount != null && medAmount <= schedule.dosage

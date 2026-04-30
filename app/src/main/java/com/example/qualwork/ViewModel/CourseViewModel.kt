@@ -20,6 +20,7 @@ import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
+import com.example.qualwork.Model.Repository.UserRepository
 import com.example.qualwork.Model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -48,6 +49,7 @@ class CourseViewModel @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val notificationScheduler: NotificationScheduler,
     private val userPreferences: UserPreferences,
+    private val userRepository: UserRepository
 
 ) : ViewModel()
 {
@@ -106,9 +108,11 @@ class CourseViewModel @Inject constructor(
     }
 
     private var userId: String = ""
+    private var userName: String = ""
     init {
         viewModelScope.launch {
             userId = userPreferences.currentUserId.first() ?: ""
+            userName = userRepository.getById(userId)?.name ?: ""
         }
     }
 
@@ -224,6 +228,7 @@ class CourseViewModel @Inject constructor(
     fun isStep2Valid() = dosage > 0
     fun isStep3Valid() = endDate == null || endDate!! > startDate
 
+
     fun saveCourse() {
         viewModelScope.launch {
             isSaving = true
@@ -261,8 +266,9 @@ class CourseViewModel @Inject constructor(
                     unit = medicationForm.unit,
                     startDate = startDate,
                     endDate = endDate,
-                    medAmount = medAmount,
-                    intakeTimes = parsedTimes
+                    intakeTimes = parsedTimes,
+                    userId = userId,
+                    userName = userName
                 )
                 savedSuccessfully = true
             } catch (e: Exception) {

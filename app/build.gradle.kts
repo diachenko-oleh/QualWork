@@ -95,5 +95,4 @@ dependencies {
     implementation(platform(libs.firebase.bom))
 
     implementation(libs.firebase.firestore.ktx)
-    implementation("com.google.firebase:firebase-messaging-ktx")
 }

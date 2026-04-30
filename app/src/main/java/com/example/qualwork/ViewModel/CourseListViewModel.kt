@@ -16,21 +16,21 @@ import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.Repository.UserRepository
 import com.example.qualwork.Model.UserPreferences
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.firestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
-class CourseInfoViewModel @Inject constructor(
+class CourseListViewModel @Inject constructor(
     private val medRepository: MedicationRepository,
     private val intakeRepository: IntakeLogRepository,
     private val intakeLogDao: IntakeLogDao,
@@ -179,5 +179,43 @@ class CourseInfoViewModel @Inject constructor(
                 isLoadingPatientCourses = false
             }
         }
+    }
+
+    private var missedNotificationListener: ListenerRegistration? = null
+
+    fun startObservingMissedNotifications(
+        patientIds: List<String>,
+        onMissed: (String, String, String) -> Unit
+    ) {
+        missedNotificationListener?.remove() // зупинити попередній слухач
+
+        if (patientIds.isEmpty()) return
+
+        missedNotificationListener = Firebase.firestore
+            .collection("missed_notifications")
+            .whereIn("patientId", patientIds)
+            .whereEqualTo("seen", false)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null) return@addSnapshotListener
+
+                snapshot.documentChanges
+                    .filter { it.type == DocumentChange.Type.ADDED }
+                    .forEach { change ->
+                        val data = change.document.data
+                        val patientName = data["patientName"] as? String ?: ""
+                        val medicationName = data["medicationName"] as? String ?: ""
+                        val time = data["time"] as? String ?: ""
+
+                        onMissed(patientName, medicationName, time)
+
+                        // Позначити як переглянуте
+                        firestoreRepository.markNotificationSeen(change.document.id)
+                    }
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        missedNotificationListener?.remove()
     }
 }
