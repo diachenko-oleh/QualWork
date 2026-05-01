@@ -34,7 +34,7 @@ object SupervisorNotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Пацієнт $patientName пропустив прийом")
-            .setContentText(" Пропущено прийом $medicationName о $time")
+            .setContentText("Пропущено $medicationName о $time")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()

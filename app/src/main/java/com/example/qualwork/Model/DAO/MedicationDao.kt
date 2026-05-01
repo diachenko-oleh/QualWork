@@ -32,4 +32,8 @@ interface MedicationDao {
     @Transaction
     @Query("SELECT * FROM medications ORDER BY name ASC")
     fun getAllWithSchedules(): Flow<List<MedicationWithSchedules>>
+
+    @Transaction
+    @Query("SELECT * FROM medications")
+    suspend fun getAllWithSchedulesOnce(): List<MedicationWithSchedules>
 }

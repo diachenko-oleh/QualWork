@@ -10,6 +10,7 @@ import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
+import com.example.qualwork.Model.Repository.NetworkObserver
 import com.example.qualwork.Model.Repository.UserRepository
 import dagger.Module
 import dagger.Provides
@@ -39,6 +40,10 @@ object DatabaseModule {
     fun provideIntakeTimeDao(db: AppDatabase): IntakeTimeDao = db.intakeTimeDao()
     @Provides
     @Singleton
+    fun provideNetworkObserver(@ApplicationContext context: Context): NetworkObserver =
+        NetworkObserver(context)
+    @Provides
+    @Singleton
     fun provideUserPreferences(
         @ApplicationContext context: Context
     ): UserPreferences = UserPreferences(context)
@@ -46,8 +51,10 @@ object DatabaseModule {
     @Singleton
     fun provideUserRepository(
         userDao: UserDao,
+        medicationDao: MedicationDao,
+        intakeTimeDao: IntakeTimeDao,
         firestoreRepository: FirestoreRepository
-    ): UserRepository = UserRepository(userDao,firestoreRepository)
+    ): UserRepository = UserRepository(userDao,medicationDao, intakeTimeDao,firestoreRepository)
     @Provides
     @Singleton
     fun provideMedicationRepository(

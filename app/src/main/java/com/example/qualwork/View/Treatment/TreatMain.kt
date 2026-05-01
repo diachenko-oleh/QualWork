@@ -3,14 +3,21 @@ package com.example.qualwork.View.Treatment
 import android.Manifest
 import androidx.annotation.RequiresPermission
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,7 +28,9 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,7 +49,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,11 +59,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.qualwork.Model.Notification.SupervisorNotificationHelper
-import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
+import com.example.qualwork.Model.Repository.NetworkBannerState
+import com.example.qualwork.Model.Repository.NetworkObserver
+import com.example.qualwork.Model.Repository.stateContainer
 import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.CourseListViewModel
 import com.example.qualwork.ViewModel.CourseViewModel
+import com.example.qualwork.ViewModel.NetworkUtils
+import com.example.qualwork.ViewModel.UserViewModel
+import kotlinx.coroutines.delay
 
 @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,14 +78,37 @@ fun TreatMainPage(
     onCourseClick: (Long) -> Unit,
     viewModel: CourseViewModel = hiltViewModel(),
     courseListViewModel: CourseListViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val nextDoseTimes = courseListViewModel.nextDoseTime
     val patientCourseGroups = courseListViewModel.patientCourseGroups
+
+    val context = LocalContext.current
+    val networkObserver = remember { NetworkObserver(context) }
+    val isOnline by networkObserver.isOnline.collectAsStateWithLifecycle(
+        initialValue = NetworkUtils.isOnline(context)
+    )
+    var bannerState by remember { mutableStateOf(
+        if (NetworkUtils.isOnline(context)) NetworkBannerState.HIDDEN
+        else NetworkBannerState.OFFLINE
+    )}
+
+    LaunchedEffect(isOnline) {
+        if (isOnline && bannerState == NetworkBannerState.OFFLINE) {
+            bannerState = NetworkBannerState.SYNCING
+            userViewModel.currentUser?.id?.let { userId ->
+                userViewModel.syncOnStartup(context, userId)
+            }
+            delay(3000)
+            bannerState = NetworkBannerState.HIDDEN
+        } else if (!isOnline) {
+            bannerState = NetworkBannerState.OFFLINE
+        }
+    }
     LaunchedEffect(Unit) {
         courseListViewModel.loadPatientCourses()
     }
-    val context = LocalContext.current
     LaunchedEffect(patientCourseGroups) {
         val patientIds = patientCourseGroups.map { it.patientId }
         courseListViewModel.startObservingMissedNotifications(patientIds) {
@@ -91,6 +127,27 @@ fun TreatMainPage(
             topBar = {
                 TopAppBar(
                     title = { Text("Перегляд курсів лікування") },
+                    actions = {
+                        if (courseListViewModel.isLoadingPatientCourses) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(end = 8.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            IconButton(
+                                onClick = { courseListViewModel.loadPatientCourses() }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Refresh,
+                                    contentDescription = "Оновити",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth(),
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -112,6 +169,8 @@ fun TreatMainPage(
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.Companion.CenterHorizontally,
             ){
+                OfflineBanner(state = bannerState)
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -126,25 +185,13 @@ fun TreatMainPage(
                                onClick = { onCourseClick(item.schedules.first().id) }
                            )
                         }
-//                        if (courseInfoViewModel.isLoadingPatientCourses) {
-//                            item {
-//                                Box(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    contentAlignment = Alignment.Center
-//                                ) {
-//                                    CircularProgressIndicator()
-//                                }
-//                            }
-//                        }else {
-                            items(patientCourseGroups) { group ->
-                                CollapsibleCourseSection(
-                                    title = "Курси лікування: ${group.patientName}",
-                                    courses = group.courses,
-                                    nextDoseTimes = group.nextDoseTimes,
-                                    onCourseClick = onCourseClick
-                                )
-                            }
-                        //}
+                        items(patientCourseGroups) { group ->
+                            CollapsibleCourseSection(
+                                title = "Курси прийому: ${group.patientName}",
+                                courses = group.courses,
+                                nextDoseTimes = group.nextDoseTimes
+                            )
+                        }
                     }
                 }
             }
@@ -176,7 +223,7 @@ fun AddCourseFab(onClick: () -> Unit) {
 fun CourseCard(
     medicationWithSchedules: MedicationWithSchedules,
     nextDoseTime: String?,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val medication = medicationWithSchedules.medication
@@ -185,8 +232,8 @@ fun CourseCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     )  {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -235,18 +282,14 @@ fun CollapsibleCourseSection(
     title: String,
     courses: List<MedicationWithSchedules>,
     nextDoseTimes: Map<Long, String?>,
-    isLoading: Boolean = false,
-    onCourseClick: (Long) -> Unit
+    isLoading: Boolean = false
 ) {
-    var isExpanded by remember { mutableStateOf(true) }
+    var isExpanded by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Заголовок секції
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -267,7 +310,7 @@ fun CollapsibleCourseSection(
                     Column {
                         Text(
                             text = title,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Text(
                             text = "${courses.size} курс${
@@ -277,7 +320,7 @@ fun CollapsibleCourseSection(
                                     else -> "ів"
                                 }
                             }",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -291,7 +334,7 @@ fun CollapsibleCourseSection(
                 )
             }
 
-            // Вміст секції
+
             AnimatedVisibility(visible = isExpanded) {
                 Column {
                     HorizontalDivider()
@@ -307,7 +350,7 @@ fun CollapsibleCourseSection(
                     } else if (courses.isEmpty()) {
                         Text(
                             text = "Немає активних курсів",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -321,71 +364,65 @@ fun CollapsibleCourseSection(
                                 CourseCard(
                                     medicationWithSchedules = item,
                                     nextDoseTime = scheduleId?.let { nextDoseTimes[it] },
-                                    onClick = { onCourseClick(item.schedules.first().id) }
+                                    onClick = null
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
                 }
             }
         }
     }
 }
+
+
 @Composable
-fun NotificationTestCard(
-    scheduler: NotificationScheduler,
-    modifier: Modifier = Modifier
-) {
-    var delayMinutes by remember { mutableIntStateOf(1) }
+fun OfflineBanner(state: NetworkBannerState) {
+    val isVisible = state != NetworkBannerState.HIDDEN
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    )
-    {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Тест сповіщень",
-                style = MaterialTheme.typography.titleMedium
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInVertically() + fadeIn(),
+        exit = slideOutVertically() + fadeOut()
+    ) {
+        val (backgroundColor, contentColor, icon, text) = when (state) {
+            NetworkBannerState.OFFLINE -> stateContainer(
+                MaterialTheme.colorScheme.errorContainer,
+                MaterialTheme.colorScheme.onErrorContainer,
+                Icons.Rounded.Warning,
+                "Відсутній зв'язок з мережею — пошук ліків неможливий, а дані можуть бути застарілими"
             )
+            NetworkBannerState.SYNCING -> stateContainer(
+                MaterialTheme.colorScheme.primaryContainer,
+                MaterialTheme.colorScheme.onPrimaryContainer,
+                Icons.Rounded.Refresh,
+                "Зв'язок відновлено. Виконується синхронізація..."
+            )
+            NetworkBannerState.HIDDEN -> return@AnimatedVisibility
+        }
 
-            HorizontalDivider()
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Затримка: $delayMinutes хв",
-                    style = MaterialTheme.typography.bodyMedium
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor
                 )
-                Row {
-                    IconButton(onClick = { if (delayMinutes > 1) delayMinutes-- }) {
-                        Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Менше")
-                    }
-                    IconButton(onClick = { if (delayMinutes < 60) delayMinutes++ }) {
-                        Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Більше")
-                    }
-                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor
+                )
             }
-
-            /*OutlinedButton(
-                onClick = {
-                    scheduler.scheduleDelayed(
-                        delayMinutes = delayMinutes,
-                        medicationName = "Тестовий препарат",
-                        dosage = 1,
-                        unit = "таблетка",
-                        scheduleId = 9999L
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Відправити через $delayMinutes хв")
-            }*/
         }
     }
 }

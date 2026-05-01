@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -49,8 +50,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import javax.inject.Inject
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -183,8 +182,8 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     SEARCH("Пошук",Icons.Default.Search),
-    TREATMENT("Курси лікування", Icons.Default.Medication),
-    PROFILE("Налаштування", Icons.Default.Settings),;
+    TREATMENT("Курси прийому", Icons.Default.Medication),
+    PROFILE("Налаштування", Icons.Default.AccountCircle),;
 }
 
 

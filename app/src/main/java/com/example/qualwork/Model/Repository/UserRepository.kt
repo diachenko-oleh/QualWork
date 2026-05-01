@@ -1,11 +1,17 @@
 package com.example.qualwork.Model.Repository
 
+import android.util.Log
+import com.example.qualwork.Model.DAO.IntakeTimeDao
+import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.UserDao
+import com.example.qualwork.Model.Entity.IntakeTimeEntity
 import com.example.qualwork.Model.Entity.User
 import java.util.UUID
 
 class UserRepository(
     private val userDao: UserDao,
+    private val medicationDao: MedicationDao,
+    private val intakeTimeDao: IntakeTimeDao,
     private val firestoreRepository: FirestoreRepository
 ) {
     suspend fun createUser(name: String): User {
@@ -19,18 +25,10 @@ class UserRepository(
         return user
     }
 
-    suspend fun findUserByCode(code: String): User? =
-        firestoreRepository.findUserByCode(code)
-
     suspend fun connectToPatient(supervisorId: String, code: String): Boolean =
         firestoreRepository.connectToPatient(supervisorId, code)
 
-    suspend fun getPatientIds(supervisorId: String): List<String> =
-        firestoreRepository.getPatientIds(supervisorId)
-
-
     suspend fun getById(id: String): User? = userDao.getById(id)
-    suspend fun getByCode(code: String): User? = userDao.getByCode(code)
     fun getAllUsers(): List<User> {
         return userDao.getAll()
     }
@@ -56,6 +54,34 @@ class UserRepository(
 
     suspend fun removeLink(userId1: String, userId2: String): Boolean =
         firestoreRepository.removeLink(userId1, userId2)
+
+    suspend fun syncAllLocalData(userId: String) {
+        try {
+            val user = userDao.getById(userId) ?: return
+            firestoreRepository.syncUser(user)
+
+            // Medications + Schedules + IntakeTimes
+            val courses = medicationDao.getAllWithSchedulesOnce() // suspend версія
+            courses.forEach { course ->
+                firestoreRepository.syncMedication(course.medication, userId)
+                course.schedules.forEach { schedule ->
+                    firestoreRepository.syncSchedule(schedule)
+                    val times = intakeTimeDao.getBySchedule(schedule.id)
+                        .map {
+                            IntakeTimeEntity(
+                                id = it.id,
+                                scheduleId = it.scheduleId,
+                                time = it.time
+                            )
+                        }
+                    firestoreRepository.syncIntakeTimes(schedule.id, userId, times)
+                }
+            }
+            Log.d("Sync", "Синхронізація при запуску завершена")
+        } catch (e: Exception) {
+            Log.e("Sync", "Помилка синхронізації: $e")
+        }
+    }
 }
 
 object IdGenerator {

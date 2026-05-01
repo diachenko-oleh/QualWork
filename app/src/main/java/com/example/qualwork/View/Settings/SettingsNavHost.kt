@@ -16,15 +16,8 @@ fun SettingsScreen() {
         val navController = rememberNavController()
         NavHost(
             navController = navController,
-            startDestination = SettingsTabNavigator.SettingsMain.route,
+            startDestination = SettingsTabNavigator.Account.route,
         ){
-            composable(SettingsTabNavigator.SettingsMain.route) {
-                SettingsMainPage(
-                    {
-                        navController.navigate(SettingsTabNavigator.Account.route)
-                    }
-                )
-            }
             composable(SettingsTabNavigator.Account.route) {
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },

@@ -92,7 +92,7 @@ object DataScraper{
                 "Ціна недоступна"
             }
 
-            // Формуємо URL аптек з координатами або fallback на Київ
+            //URL аптек з координатами або по замовчуванню на Київ
             val pharmacyUrl = if (userLat != null && userLon != null) {
                 val citySlug = LocationHelper.getCitySlug(userLat, userLon)
                 android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")

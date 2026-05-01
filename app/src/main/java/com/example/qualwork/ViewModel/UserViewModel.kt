@@ -1,5 +1,6 @@
 package com.example.qualwork.ViewModel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -50,10 +51,27 @@ class UserViewModel @Inject constructor(
         val savedId = userPreferences.currentUserId.first()
         val user = savedId?.let { userRepository.getById(it) }
 
+        if (user != null) {
+            currentUser = user
+        }
+
         return if (user != null) {
             SplashDestination.Home
         } else {
             SplashDestination.CreateProfile
+        }
+    }
+    var isOffline by mutableStateOf(false)
+        private set
+
+    fun syncOnStartup(context: Context, userId: String) {
+        viewModelScope.launch {
+            if (!NetworkUtils.isOnline(context)) {
+                isOffline = true
+                return@launch
+            }
+            isOffline = false
+            userRepository.syncAllLocalData(userId)
         }
     }
     fun createUser() {
@@ -137,6 +155,9 @@ class UserViewModel @Inject constructor(
             if (success) loadLinks()
         }
     }
+
+
+
 }
 sealed class SplashDestination {
     object Home : SplashDestination()

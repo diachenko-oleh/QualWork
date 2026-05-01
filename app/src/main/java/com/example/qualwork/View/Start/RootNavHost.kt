@@ -13,7 +13,6 @@ import com.example.qualwork.View.Treatment.CourseInfoScreen
 import com.example.qualwork.View.Treatment.IntakeScreen
 import com.example.qualwork.View.Treatment.NewCourse
 import com.example.qualwork.View.Treatment.TreatTabNavigator
-import kotlinx.coroutines.delay
 
 @Composable
 fun RootNavHost(
@@ -142,3 +141,4 @@ fun RootNavHost(
         }
     }
 }
+

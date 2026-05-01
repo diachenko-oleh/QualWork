@@ -203,6 +203,11 @@ fun ProfileScreen(
                                 style = MaterialTheme.typography.headlineSmall,
                                 letterSpacing = 4.sp
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Не повідомляйте ваш код ненадійним особам",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                     }
                 }
@@ -256,13 +261,13 @@ fun ConnectPatientCard(
             ) {
                 Column {
                     Text(
-                        text = "Підключення пацієнта",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Підключення користувача",
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Введіть код іншого користувача",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Введіть код підключення іншого користувача",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -352,11 +357,13 @@ fun ConnectedPatientsCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Підключені пацієнти",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -412,12 +419,14 @@ fun SupervisorsCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "За вами наглядають",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "За вами наглядають:",
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
