@@ -12,7 +12,6 @@ import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.Model.Entity.DayIntakeStat
-import com.example.qualwork.Model.Entity.IntakeLog
 import com.example.qualwork.Model.Entity.IntakeLogStat
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
@@ -36,7 +35,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -102,7 +100,7 @@ class CourseViewModel @Inject constructor(
                 medRepository.deleteCourse(scheduleId)
                 deletedSuccessfully = true
             } catch (e: Exception) {
-                android.util.Log.e("AddCourse", "Помилка видалення: ${e.message}")
+                Log.e("AddCourse", "Помилка видалення: ${e.message}")
             }
         }
     }
@@ -196,7 +194,7 @@ class CourseViewModel @Inject constructor(
         medAmount = newAmount
 
         viewModelScope.launch {
-            schedule?.let {
+            schedule.let {
                 scheduleDao.updateMedAmount(it.id, newAmount)
             }
         }

@@ -39,8 +39,8 @@ class CourseListViewModel @Inject constructor(
     private val userPreferences: UserPreferences,
     private val firestoreRepository: FirestoreRepository,
     private val userRepository: UserRepository
-) : ViewModel() {
-
+) : ViewModel()
+{
     var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
     var patientCourseGroups by mutableStateOf<List<PatientCourseGroup>>(emptyList())

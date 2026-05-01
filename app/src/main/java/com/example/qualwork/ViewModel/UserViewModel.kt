@@ -32,14 +32,6 @@ class UserViewModel @Inject constructor(
 
     fun onNameChange(value: String) { nameInput = value }
     fun isNameValid() = nameInput.isNotBlank()
-    var usersInDb by mutableStateOf<List<User>>(emptyList())
-        private set
-
-    fun loadUsers() {
-        viewModelScope.launch(Dispatchers.IO) {
-            usersInDb = userRepository.getAllUsers()
-        }
-    }
     fun loadCurrentUser() {
         viewModelScope.launch {
             val id = userPreferences.currentUserId.first()
@@ -155,8 +147,6 @@ class UserViewModel @Inject constructor(
             if (success) loadLinks()
         }
     }
-
-
 
 }
 sealed class SplashDestination {
