@@ -32,7 +32,7 @@ class LowAmountNotifier @Inject constructor(
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Увага")
-            .setContentText("Препарат \"$medicationName\" скоро закінчиться, поповніть запас")
+            .setContentText("Препарат $medicationName скоро закінчиться, поповніть запас")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 

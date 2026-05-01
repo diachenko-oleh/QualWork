@@ -10,9 +10,9 @@ import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
-object CaregiverNotificationHelper {
+object SupervisorNotificationHelper {
 
-    const val CHANNEL_ID = "caregiver_missed_channel"
+    const val CHANNEL_ID = "supervisor_missed_channel"
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showMissedNotification(
@@ -33,8 +33,8 @@ object CaregiverNotificationHelper {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
-            .setContentTitle("Пацієнт пропустив прийом")
-            .setContentText("$patientName пропустив(ла) $medicationName о $time")
+            .setContentTitle("Пацієнт $patientName пропустив прийом")
+            .setContentText(" Пропущено прийом $medicationName о $time")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()

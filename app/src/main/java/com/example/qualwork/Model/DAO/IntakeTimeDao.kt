@@ -10,8 +10,10 @@ interface IntakeTimeDao {
 
     @Query("SELECT * FROM IntakeTimeEntity WHERE scheduleId = :scheduleId")
     suspend fun getTimesForSchedule(scheduleId: Long): List<IntakeTimeEntity>
+
     @Query("SELECT * FROM IntakeTimeEntity WHERE scheduleId = :scheduleId")
     suspend fun getBySchedule(scheduleId: Long): List<IntakeTimeEntity>
+    
     @Insert
     suspend fun insertAll(times: List<IntakeTimeEntity>): List<Long>
 

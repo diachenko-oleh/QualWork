@@ -10,8 +10,6 @@ import com.example.qualwork.Model.Entity.User
 import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserDao {
-
-    // Insert / Update
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: User)
 
@@ -21,35 +19,24 @@ interface UserDao {
     @Update
     suspend fun update(user: User)
 
-    // Delete
     @Delete
     suspend fun delete(user: User)
 
     @Query("DELETE FROM users WHERE id = :id")
     suspend fun deleteById(id: String)
 
-
-    // Get by ID
     @Query("SELECT * FROM users WHERE id = :id")
         suspend fun getById(id: String): User?
 
-
-    // Get all users
     @Query("SELECT * FROM users")
     fun getAll(): List<User>
 
-
-    // Find by code (наприклад, для логіну/реєстрації або пошуку)
     @Query("SELECT * FROM users WHERE code = :code LIMIT 1")
     suspend fun getByCode(code: String): User?
 
-
-    // Search by name (для UI пошуку)
     @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%'")
     fun searchByName(query: String): Flow<List<User>>
 
-
-    // Check existence
     @Query("SELECT EXISTS(SELECT 1 FROM users WHERE id = :id)")
     suspend fun exists(id: String): Boolean
 

@@ -16,8 +16,10 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM schedules WHERE medicationId = :medicationId")
     fun getByMedication(medicationId: Long): Flow<List<Schedule>>
+
     @Query("SELECT * FROM schedules WHERE id = :id")
     suspend fun getById(id: Long): Schedule?
+
     @Query("""
         SELECT * FROM schedules
         WHERE userId = :userId
@@ -26,6 +28,7 @@ interface ScheduleDao {
 
     @Update
     suspend fun update(schedule: Schedule)
+
     @Query("UPDATE schedules SET medAmount = :amount WHERE id = :scheduleId")
     suspend fun updateMedAmount(scheduleId: Long, amount: Int)
 

@@ -1,7 +1,6 @@
 package com.example.qualwork.View.Treatment
 
 import android.Manifest
-import android.annotation.SuppressLint
 import androidx.annotation.RequiresPermission
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -51,7 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.qualwork.Model.Notification.CaregiverNotificationHelper
+import com.example.qualwork.Model.Notification.SupervisorNotificationHelper
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.View.theme.QualWorkTheme
@@ -78,7 +77,7 @@ fun TreatMainPage(
         val patientIds = patientCourseGroups.map { it.patientId }
         courseListViewModel.startObservingMissedNotifications(patientIds) {
                 patientName, medicationName, time ->
-            CaregiverNotificationHelper.showMissedNotification(
+            SupervisorNotificationHelper.showMissedNotification(
                 context = context,
                 patientName = patientName,
                 medicationName = medicationName,

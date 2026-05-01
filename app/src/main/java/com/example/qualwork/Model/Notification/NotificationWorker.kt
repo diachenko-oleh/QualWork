@@ -122,7 +122,7 @@ class NotificationWorker @AssistedInject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        //Log.d("INTAKE_DEBUG", "Creating notification scheduleId = $scheduleId")
+            //Log.d("INTAKE_DEBUG", "Creating notification scheduleId = $scheduleId")
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Час приймати $medicationName")
@@ -133,7 +133,7 @@ class NotificationWorker @AssistedInject constructor(
             .setContentIntent(pendingIntent)
             .build()
 
-        Log.d("INTAKE_DEBUG", "Worker sending timeString = $timeString, scheduleId = $scheduleId")
+            //Log.d("INTAKE_DEBUG", "Worker sending timeString = $timeString, scheduleId = $scheduleId")
         val notificationId = scheduleId.toInt() * 100 + timeString.hashCode()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }

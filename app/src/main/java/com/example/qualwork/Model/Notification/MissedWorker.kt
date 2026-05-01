@@ -26,8 +26,7 @@ class MissedWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
     private val intakeRepository: IntakeLogRepository,
-    private val firestoreRepository: FirestoreRepository,
-    //private val userPreferences: UserPreferences
+    private val firestoreRepository: FirestoreRepository
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {

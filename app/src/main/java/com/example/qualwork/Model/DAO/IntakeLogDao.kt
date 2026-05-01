@@ -13,8 +13,6 @@ import java.time.LocalDateTime
 
 @Dao
 interface IntakeLogDao {
-
-    // Insert
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: IntakeLog): Long
 
@@ -33,16 +31,12 @@ interface IntakeLogDao {
         to: LocalDateTime
     ): List<IntakeLog>
 
-
     @Query("SELECT * FROM intake_logs")
     fun observeAll(): Flow<List<IntakeLog>>
 
-    // Update
     @Update
     suspend fun update(log: IntakeLog)
 
-
-    // Delete
     @Delete
     suspend fun delete(log: IntakeLog)
 
@@ -59,12 +53,10 @@ interface IntakeLogDao {
     AND taken = 0
     """)
     suspend fun isSkipped(scheduleId: Long, plannedDate: String): Int
-    // Get by ID
+
     @Query("SELECT * FROM intake_logs WHERE id = :id")
     suspend fun getById(id: Long): IntakeLog?
 
-
-    // Get all logs
     @Query("SELECT * FROM intake_logs ORDER BY actualDoseTime DESC")
     fun getAll(): Flow<List<IntakeLog>>
 
@@ -83,13 +75,8 @@ interface IntakeLogDao {
     WHERE scheduleId = :scheduleId 
     AND plannedDoseTime LIKE :date || '%'
     """)
-    suspend fun getTodayLogs(
-        scheduleId: Long,
-        date: String
-    ): List<IntakeLog>
+    suspend fun getTodayLogs(scheduleId: Long, date: String): List<IntakeLog>
 
-
-    // Count statistics
     @Query("""
         SELECT COUNT(*) FROM intake_logs
         WHERE scheduleId = :scheduleId AND taken = 1
