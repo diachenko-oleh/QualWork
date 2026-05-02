@@ -71,7 +71,7 @@ fun SearchMainPage(viewModel: SearchViewModel, openSearchBarScreen: () -> Unit){
             ) {
                 SearchButton(openSearchBarScreen)
 
-                LocationInfoText(isPermissionGranted = isPermissionGranted)
+               // LocationInfoText(isPermissionGranted = isPermissionGranted)
             }
         }
     }

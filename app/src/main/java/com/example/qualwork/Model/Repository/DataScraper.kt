@@ -92,13 +92,14 @@ object DataScraper{
                 "Ціна недоступна"
             }
 
+            val cleanUrl = medicineUrl.substringBefore("?").trimEnd('/')
             //URL аптек з координатами або по замовчуванню на Київ
             val pharmacyUrl = if (userLat != null && userLon != null) {
                 val citySlug = LocationHelper.getCitySlug(userLat, userLon)
-                android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
-                medicineUrl.trimEnd('/') + "/pharmacy/$citySlug/"
+                    android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
+                "$cleanUrl/pharmacy/$citySlug/"
             } else {
-                medicineUrl.trimEnd('/') + "/pharmacy/kyiv/"
+                "$cleanUrl/pharmacy/kyiv/"
             }
 
             android.util.Log.d("SCRAPER", "pharmacyUrl: $pharmacyUrl")
@@ -148,6 +149,8 @@ object DataScraper{
                 .split(" ")
                 .first()
                 .trim()
+
+
                 android.util.Log.d("ELIKY", "searchQuery: $searchQuery")
 
             val url = "https://likicontrol.com.ua/пошук-ліків/?$searchQuery"

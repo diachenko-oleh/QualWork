@@ -277,8 +277,7 @@ class CourseViewModel @Inject constructor(
         }
     }
 
-    val courses: StateFlow<List<MedicationWithSchedules>> =
-        medRepository.getAllWithSchedules()
+    val courses: StateFlow<List<MedicationWithSchedules>> = medRepository.getAllWithSchedules()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),

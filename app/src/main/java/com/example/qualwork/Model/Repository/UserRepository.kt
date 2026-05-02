@@ -29,9 +29,6 @@ class UserRepository(
         firestoreRepository.connectToPatient(supervisorId, code)
 
     suspend fun getById(id: String): User? = userDao.getById(id)
-    fun getAllUsers(): List<User> {
-        return userDao.getAll()
-    }
     private suspend fun generateUniqueCode(): String {
         var code = CodeGenerator.generate()
         while (userDao.getByCode(code) != null) {

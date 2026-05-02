@@ -119,6 +119,9 @@ class SearchViewModel(application: Application): AndroidViewModel(application) {
 
                 val eLikyStatus = DataScraper.checkSocialProgram(details.name)
                 android.util.Log.d("ELIKY", "status: $eLikyStatus")
+                android.util.Log.d("PHARMACIES", "medicineUrl: $medicineUrl")
+                android.util.Log.d("PHARMACIES", "userLocation: $userLocation")
+                android.util.Log.d("PHARMACIES", "pharmacies count: ${details.pharmacies.size}")
 
                 _allPharmacies.value = if (userLocation != null) {
                     val (userLat, userLon) = userLocation

@@ -419,31 +419,6 @@ class FirestoreRepository @Inject constructor() {
         }
     }
 
-    fun observeMissedNotifications(
-        supervisorId: String,
-        onNewMissed: (patientName: String, medicationName: String, time: String, docId: String) -> Unit
-    ) {
-        firestore.collection("missed_notifications")
-            .whereEqualTo("seen", false)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-
-                snapshot.documentChanges
-                    .filter { it.type == DocumentChange.Type.ADDED }
-                    .forEach { change ->
-                        val data = change.document.data
-                        val patientId = data["patientId"] as? String ?: return@forEach
-
-                        onNewMissed(
-                            data["patientName"] as? String ?: "",
-                            data["medicationName"] as? String ?: "",
-                            data["time"] as? String ?: "",
-                            change.document.id
-                        )
-                    }
-            }
-    }
-
     fun markNotificationSeen(docId: String) {
         firestore.collection("missed_notifications")
             .document(docId)
