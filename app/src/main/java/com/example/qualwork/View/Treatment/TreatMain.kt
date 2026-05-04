@@ -69,6 +69,8 @@ import com.example.qualwork.ViewModel.CourseViewModel
 import com.example.qualwork.ViewModel.NetworkUtils
 import com.example.qualwork.ViewModel.UserViewModel
 import kotlinx.coroutines.delay
+import java.time.LocalDate
+import java.time.LocalTime
 
 @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +84,20 @@ fun TreatMainPage(
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
     val nextDoseTimes = courseListViewModel.nextDoseTime
+    val nextDoseTimesRaw = courseListViewModel.nextDoseTimeRaw
+
+    val sortedCourses = remember(courses, nextDoseTimesRaw) {
+        courses.sortedWith(compareBy { item ->
+            val scheduleId = item.schedules.firstOrNull()?.id ?: return@compareBy LocalTime.MAX
+            val (time, isTomorrow) = nextDoseTimesRaw[scheduleId] ?: return@compareBy LocalTime.MAX
+            if (isTomorrow) {
+                LocalDate.now().plusDays(1).atTime(time)
+            } else {
+                LocalDate.now().atTime(time)
+            }
+        })
+    }
+
     val patientCourseGroups = courseListViewModel.patientCourseGroups
 
     val context = LocalContext.current
@@ -177,7 +193,7 @@ fun TreatMainPage(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(courses) { item ->
+                        items(sortedCourses) {item ->
                             val scheduleId = item.schedules.firstOrNull()?.id
                            CourseCard(
                                medicationWithSchedules = item,
@@ -227,8 +243,6 @@ fun CourseCard(
     modifier: Modifier = Modifier
 ) {
     val medication = medicationWithSchedules.medication
-
-
     Card(
         modifier = modifier
             .fillMaxWidth()

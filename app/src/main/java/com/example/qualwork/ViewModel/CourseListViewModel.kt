@@ -43,6 +43,8 @@ class CourseListViewModel @Inject constructor(
 {
     var nextDoseTime by mutableStateOf<Map<Long, String>>(emptyMap())
         private set
+    var nextDoseTimeRaw by mutableStateOf<Map<Long, Pair<LocalTime, Boolean>>>(emptyMap())
+        private set
     var patientCourseGroups by mutableStateOf<List<PatientCourseGroup>>(emptyList())
         private set
     var isLoadingPatientCourses by mutableStateOf(false)
@@ -59,12 +61,14 @@ class CourseListViewModel @Inject constructor(
             ){courses, _ -> courses}.collect {
             courseList ->
             val result = mutableMapOf<Long, String>()
+            val resultRaw = mutableMapOf<Long, Pair<LocalTime, Boolean>>()
 
             courseList.forEach { medicationWithSchedules ->
                 medicationWithSchedules.schedules.forEach { schedule ->
 
                     val nextDose = calculateNextDose(schedule.id)
 
+                    resultRaw[schedule.id] = nextDose ?: (LocalTime.MAX to true)
                     result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
                         val formattedTime = time.toString().substring(0, 5)
 
@@ -77,25 +81,25 @@ class CourseListViewModel @Inject constructor(
                 }
             }
             nextDoseTime = result
+            nextDoseTimeRaw = resultRaw
             }
         }
     }
 
     private suspend fun calculateNextDose(scheduleId: Long): Pair<LocalTime, Boolean>? {
-        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
+//        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
         val times = intakeTimeDao.getBySchedule(scheduleId)
         if (times.isEmpty()) return null
 
         val today = LocalDate.now().toString()
         val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
         val nowTime = LocalTime.now()
-        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
-
-        Log.d("INTAKE_DEBUG", "calculateNextDose scheduleId=$scheduleId")
-        Log.d("INTAKE_DEBUG", "  today=$today")
-        Log.d("INTAKE_DEBUG", "  logsToday=${logsToday.map { "${it.plannedDoseTime} taken=${it.taken}" }}")
-        Log.d("INTAKE_DEBUG", "  nowTime=$nowTime")
-
+//        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
+//
+//        Log.d("INTAKE_DEBUG", "calculateNextDose scheduleId=$scheduleId")
+//        Log.d("INTAKE_DEBUG", "  today=$today")
+//        Log.d("INTAKE_DEBUG", "  logsToday=${logsToday.map { "${it.plannedDoseTime} taken=${it.taken}" }}")
+//        Log.d("INTAKE_DEBUG", "  nowTime=$nowTime")
 
         val takenTimes = logsToday
             .filter { it.taken }
@@ -106,14 +110,11 @@ class CourseListViewModel @Inject constructor(
 
         val sortedTimes = times.map { LocalTime.parse(it.time) }.sorted()
         val nextToday = sortedTimes.firstOrNull     {!it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes}
-            // { it.isAfter(nowTime) && it !in takenTimes }
 
-            Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
+            //Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
 
         if (nextToday != null) return nextToday to false
         return sortedTimes.first() to true
-
-
     }
 
     fun loadPatientCourses() {

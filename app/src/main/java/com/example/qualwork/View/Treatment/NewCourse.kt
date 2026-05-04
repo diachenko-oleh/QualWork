@@ -119,7 +119,6 @@ fun NewCourse(
                     3 -> Step3Content(viewModel = viewModel)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -132,7 +131,6 @@ fun NewCourse(
                             Text("Назад")
                         }
                     }
-
                     Button(
                         onClick = {
                             if (currentStep < 3) {

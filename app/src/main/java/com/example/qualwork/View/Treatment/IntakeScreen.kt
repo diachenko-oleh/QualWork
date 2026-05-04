@@ -151,7 +151,12 @@ fun IntakeScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Вказування неправдивої інформації може вплинути на процес лікування",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }

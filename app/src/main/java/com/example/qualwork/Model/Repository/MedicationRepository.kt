@@ -1,5 +1,6 @@
 package com.example.qualwork.Model.Repository
 
+import android.util.Log
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.ScheduleDao
