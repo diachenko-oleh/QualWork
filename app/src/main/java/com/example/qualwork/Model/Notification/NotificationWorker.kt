@@ -21,16 +21,18 @@ import androidx.work.workDataOf
 import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.Duration
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters
-) : CoroutineWorker(context, workerParams) {
-
-
+) : CoroutineWorker(context, workerParams)
+{
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override suspend fun doWork(): Result {
         val medicationName = inputData.getString(KEY_MEDICATION_NAME) ?: return Result.failure()
@@ -51,15 +53,20 @@ class NotificationWorker @AssistedInject constructor(
             userName
         )
 
+        //обробка кінця курсу
         if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
+
         try {
             showNotification(medicationName, dosage, unit, scheduleId, timeString)
-            return Result.success()
         } catch (e: SecurityException) {
             return Result.failure()
         }
+
+        scheduleNextDay(timeString)
+
+        return Result.success()
     }
     private fun scheduleMissedCheck(
         scheduleId: Long,
@@ -79,7 +86,7 @@ class NotificationWorker @AssistedInject constructor(
         )
 
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
-            .setInitialDelay(10, TimeUnit.MINUTES) //повідомленняЧерез
+            .setInitialDelay(10, TimeUnit.MINUTES) //очікування повідомленняЧерез
             .setInputData(inputData)
             .addTag("missed_$scheduleId")
             .build()
@@ -136,6 +143,28 @@ class NotificationWorker @AssistedInject constructor(
             //Log.d("INTAKE_DEBUG", "Worker sending timeString = $timeString, scheduleId = $scheduleId")
         val notificationId = scheduleId.toInt() * 100 + timeString.hashCode()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
+    }
+
+    private fun scheduleNextDay(timeString: String) {
+        val time = LocalTime.parse(timeString)
+        val now = ZonedDateTime.now()
+
+        val nextTrigger = now.withHour(time.hour)
+            .withMinute(time.minute)
+            .withSecond(0)
+            .withNano(0)
+            .plusDays(1) //наступний день
+
+        val delay = Duration.between(now, nextTrigger).toMillis()
+
+        val work = OneTimeWorkRequestBuilder<NotificationWorker>()
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .setInputData(inputData)
+            .addTag(inputData.getLong(KEY_SCHEDULE_ID, -1L).toString())
+            .addTag("${inputData.getLong(KEY_SCHEDULE_ID, -1L)}_${timeString}")
+            .build()
+
+        WorkManager.getInstance(context).enqueue(work)
     }
 
     companion object {

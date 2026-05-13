@@ -70,7 +70,7 @@ class NotificationScheduler @Inject constructor(
             .withSecond(0)
             .withNano(0)
 
-        if (nextTrigger.isBefore(now)) {
+        while (nextTrigger.isBefore(now)) {
             nextTrigger = nextTrigger.plusDays(1)
         }
 

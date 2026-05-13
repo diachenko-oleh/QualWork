@@ -112,7 +112,6 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                         CircularProgressIndicator()
                     }
                 }
-
                 is MedicineInfoUiState.Error -> {
                     Box(
                         modifier = Modifier
@@ -123,7 +122,6 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                         Text(state.message, color = MaterialTheme.colorScheme.error)
                     }
                 }
-
                 is MedicineInfoUiState.Success -> {
                     val info = state.searchMedication
                     LazyColumn(
@@ -147,7 +145,7 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                         item {
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    android.util.Log.d("MED_INFO_CHECK", "manufacturer: ${info.manufacturer}")
+                                    //android.util.Log.d("MED_INFO_CHECK", "manufacturer: ${info.manufacturer}")
                                     Text(
                                         text = info.name,
                                         style = MaterialTheme.typography.titleLarge,

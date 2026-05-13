@@ -150,9 +150,6 @@ object DataScraper{
                 .first()
                 .trim()
 
-
-                android.util.Log.d("ELIKY", "searchQuery: $searchQuery")
-
             val url = "https://likicontrol.com.ua/пошук-ліків/?$searchQuery"
                 android.util.Log.d("ELIKY", "url: $url")
 
@@ -166,7 +163,7 @@ object DataScraper{
 
             val matchingCards = cards.filter  { card ->
                 val cardName = card.select("h2, h3, strong").text().uppercase()
-                android.util.Log.d("ELIKY", "cardName: $cardName") // <- додай
+                android.util.Log.d("ELIKY", "cardName: $cardName")
                 cardName.contains(searchQuery.uppercase())
             }
                 android.util.Log.d("ELIKY", "matchingCards count: ${matchingCards.size}")
