@@ -96,7 +96,7 @@ object DataScraper{
             //URL аптек з координатами або по замовчуванню на Київ
             val pharmacyUrl = if (userLat != null && userLon != null) {
                 val citySlug = LocationHelper.getCitySlug(userLat, userLon)
-                    android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
+                //android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
                 "$cleanUrl/pharmacy/$citySlug/"
             } else {
                 "$cleanUrl/pharmacy/kyiv/"

@@ -1,10 +1,9 @@
 package com.example.qualwork.Model.Repository
 
-import android.util.Log
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.ScheduleDao
-import com.example.qualwork.Model.Entity.IntakeTimeEntity
+import com.example.qualwork.Model.Entity.IntakeTime
 import com.example.qualwork.Model.Entity.Medication
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
@@ -43,7 +42,7 @@ class MedicationRepository @Inject constructor(
             )
         )
         val intakeTimeEntities = intakeTimes.map {
-            IntakeTimeEntity(scheduleId = scheduleId, time = it.toString())
+            IntakeTime(scheduleId = scheduleId, time = it.toString())
         }
         val intakeTimeIds = intakeTimeDao.insertAll(intakeTimeEntities)
 
@@ -96,7 +95,7 @@ class MedicationRepository @Inject constructor(
         )
         intakeTimeDao.deleteBySchedule(scheduleId)
         val intakeTimeEntities = intakeTimes.map {
-            IntakeTimeEntity(scheduleId = scheduleId, time = it.toString())
+            IntakeTime(scheduleId = scheduleId, time = it.toString())
         }
         val intakeTimeIds = intakeTimeDao.insertAll(intakeTimeEntities)
         val savedIntakeTimes = intakeTimeEntities.mapIndexed { index, entity ->

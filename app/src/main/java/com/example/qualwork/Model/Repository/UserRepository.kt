@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.UserDao
-import com.example.qualwork.Model.Entity.IntakeTimeEntity
+import com.example.qualwork.Model.Entity.IntakeTime
 import com.example.qualwork.Model.Entity.User
 import java.util.UUID
 
@@ -65,7 +65,7 @@ class UserRepository(
                     firestoreRepository.syncSchedule(schedule)
                     val times = intakeTimeDao.getBySchedule(schedule.id)
                         .map {
-                            IntakeTimeEntity(
+                            IntakeTime(
                                 id = it.id,
                                 scheduleId = it.scheduleId,
                                 time = it.time

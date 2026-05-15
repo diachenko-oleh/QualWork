@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.qualwork.Model.Entity.IntakeLog
-import com.example.qualwork.Model.Entity.IntakeTimeEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDateTime
 

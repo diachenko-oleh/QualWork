@@ -1,6 +1,5 @@
 package com.example.qualwork.Model
 import android.content.Context
-import com.example.qualwork.Model.DAO.ConnectionDao
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
@@ -28,8 +27,6 @@ object DatabaseModule {
         AppDatabase.getInstance(context)
     @Provides
     fun provideUserDao(db: AppDatabase): UserDao = db.userDao()
-    @Provides
-    fun provideConnectionDao(db: AppDatabase): ConnectionDao = db.connectionDao()
     @Provides
     fun provideIntakeLogDao(db: AppDatabase): IntakeLogDao = db.intakeLogDao()
     @Provides

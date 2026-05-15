@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 class NetworkObserver(private val context: Context) {
-
     val isOnline: Flow<Boolean> = callbackFlow {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 

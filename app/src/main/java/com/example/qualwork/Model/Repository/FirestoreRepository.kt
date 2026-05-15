@@ -2,13 +2,12 @@ package com.example.qualwork.Model.Repository
 
 import android.util.Log
 import com.example.qualwork.Model.Entity.IntakeLog
-import com.example.qualwork.Model.Entity.IntakeTimeEntity
+import com.example.qualwork.Model.Entity.IntakeTime
 import com.example.qualwork.Model.Entity.Medication
 import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Entity.User
 import com.google.firebase.Firebase
-import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
@@ -271,7 +270,7 @@ class FirestoreRepository @Inject constructor() {
 
     //intake time
 
-    fun syncIntakeTimes(scheduleId: Long, userId: String, intakeTimes: List<IntakeTimeEntity>) {
+    fun syncIntakeTimes(scheduleId: Long, userId: String, intakeTimes: List<IntakeTime>) {
         intakeTimes.forEach { intakeTime ->
             val docId = "${userId}_${intakeTime.id}"
             firestore.collection("intake_times")
@@ -288,7 +287,7 @@ class FirestoreRepository @Inject constructor() {
         }
     }
 
-    suspend fun getPatientIntakeTimes(patientId: String): List<IntakeTimeEntity> {
+    suspend fun getPatientIntakeTimes(patientId: String): List<IntakeTime> {
         return try {
             val result = firestore.collection("intake_times")
                 .whereEqualTo("userId", patientId)
@@ -297,7 +296,7 @@ class FirestoreRepository @Inject constructor() {
 
             result.documents.mapNotNull { doc ->
                 val data = doc.data ?: return@mapNotNull null
-                IntakeTimeEntity(
+                IntakeTime(
                     id = data["localId"] as Long,
                     scheduleId = data["scheduleId"] as Long,
                     time = data["time"] as String
@@ -356,7 +355,7 @@ class FirestoreRepository @Inject constructor() {
     data class PatientFullData(
         val medications: List<Medication>,
         val schedules: List<Schedule>,
-        val intakeTimes: List<IntakeTimeEntity>,
+        val intakeTimes: List<IntakeTime>,
         val intakeLogs: List<IntakeLog>
     )
 
@@ -424,11 +423,4 @@ class FirestoreRepository @Inject constructor() {
             .document(docId)
             .update("seen", true)
     }
-
-
-
-
-
-
-
 }

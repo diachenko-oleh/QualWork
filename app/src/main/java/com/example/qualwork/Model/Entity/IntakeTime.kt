@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.time.LocalTime
+
 @Entity(
     foreignKeys = [
         ForeignKey(
@@ -16,7 +16,7 @@ import java.time.LocalTime
     ],
     indices = [Index("scheduleId")]
 )
-data class IntakeTimeEntity(
+data class IntakeTime(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val scheduleId: Long,

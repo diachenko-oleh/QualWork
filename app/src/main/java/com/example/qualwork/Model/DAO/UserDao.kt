@@ -39,13 +39,4 @@ interface UserDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM users WHERE id = :id)")
     suspend fun exists(id: String): Boolean
-
-    @Query("""
-    SELECT * FROM users
-    WHERE id IN (
-        SELECT userId FROM connections
-        WHERE supervisorId = :supervisorId
-    )
-""")
-    suspend fun getUsersForSupervisor(supervisorId: String): List<User>
 }
