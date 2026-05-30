@@ -252,7 +252,11 @@ fun CourseInfoScreen(
                         )
                     }
                     Text(
-                        text = "Час наступного прийому:\n${schedule.id?.let { nextDoseTimes[it] }}",
+                        text = "Час наступного прийому:\n${
+                            schedule.id.let {
+                                nextDoseTimes[it]?.removePrefix("Наступний прийом: ")
+                            }
+                        }",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )

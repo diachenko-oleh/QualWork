@@ -71,16 +71,18 @@ class CourseListViewModel @Inject constructor(
 
                         val nextDose = calculateNextDose(schedule)
 
-                        resultRaw[schedule.id] = nextDose ?: (LocalTime.MAX to true)
-                        result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
-                            val formattedTime = time.toString().substring(0, 5)
-
-                            if (isTomorrow) {
-                                "$formattedTime (завтра)"
-                            } else {
-                                "$formattedTime (сьогодні)"
+                        result[schedule.id] = when (nextDose) {
+                            is NextDoseResult.Available -> {
+                                val formattedTime = nextDose.time.toString().substring(0, 5)
+                                if (nextDose.isTomorrow) "Наступний прийом: $formattedTime (завтра)" else "Наступний прийом: $formattedTime (сьогодні)"
                             }
-                        } ?: "Курс завершено"
+                            is NextDoseResult.Finished -> "Курс завершено"
+                            is NextDoseResult.InsufficientStock -> "Поповніть запаси"
+                        }
+                        resultRaw[schedule.id] = when (nextDose) {
+                            is NextDoseResult.Available -> nextDose.time to nextDose.isTomorrow
+                            else -> LocalTime.MAX to true
+                        }
                     }
                 }
                 nextDoseTime = result
@@ -91,19 +93,19 @@ class CourseListViewModel @Inject constructor(
 
     private suspend fun calculateNextDose(
         schedule: Schedule
-    ): Pair<LocalTime, Boolean>?
+    ): NextDoseResult
     {
         val now = System.currentTimeMillis()
-        if (now < schedule.startDate) {
-            return null
-        }
+        if (now < schedule.startDate) return NextDoseResult.Finished
 
-        if (schedule.endDate != null && now > schedule.endDate) {
-            return null
+        if (schedule.endDate != null && now > schedule.endDate) return NextDoseResult.Finished
+
+        schedule.medAmount?.let { amount ->
+            if (amount < schedule.dosage) return NextDoseResult.InsufficientStock
         }
 
         val times = intakeTimeDao.getBySchedule(schedule.id)
-        if (times.isEmpty()) return null
+        if (times.isEmpty()) return NextDoseResult.Finished
 
         val today = LocalDate.now().toString()
         val logsToday = intakeLogDao.getTodayLogs(schedule.id, today)
@@ -120,8 +122,17 @@ class CourseListViewModel @Inject constructor(
 
         val nextToday = sortedTimes.firstOrNull{!it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes}
 
-        if (nextToday != null) return nextToday to false
-        return sortedTimes.first() to true
+        return if (nextToday != null) {
+            NextDoseResult.Available(nextToday, false)
+        } else {
+            NextDoseResult.Available(sortedTimes.first(), true)
+        }
+    }
+
+    sealed class NextDoseResult {
+        data class Available(val time: LocalTime, val isTomorrow: Boolean) : NextDoseResult()
+        object Finished : NextDoseResult()
+        object InsufficientStock : NextDoseResult()
     }
 
     fun loadPatientCourses() {
@@ -195,7 +206,7 @@ class CourseListViewModel @Inject constructor(
         patientIds: List<String>,
         onMissed: (String, String, String) -> Unit
     ) {
-        missedNotificationListener?.remove() // зупинити попередній слухач
+        missedNotificationListener?.remove() // зупинити попередній
 
         if (patientIds.isEmpty()) return
 

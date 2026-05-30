@@ -282,7 +282,7 @@ fun CourseCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = nextDoseTime?.let { "Наступний прийом: $it" } ?: "",
+                    text = nextDoseTime ?: "",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

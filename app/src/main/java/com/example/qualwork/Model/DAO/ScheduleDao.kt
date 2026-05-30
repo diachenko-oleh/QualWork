@@ -34,6 +34,4 @@ interface ScheduleDao {
 
     @Delete
     suspend fun delete(schedule: Schedule)
-
-
 }
