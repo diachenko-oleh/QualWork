@@ -279,6 +279,7 @@ fun CourseInfoScreen(
                 }
             }
 
+            //Статистика
             Text(
                 text = "Статистика прийому",
                 style = MaterialTheme.typography.titleLarge,
@@ -304,6 +305,7 @@ fun CourseInfoScreen(
                     }
                 }
             }
+
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },

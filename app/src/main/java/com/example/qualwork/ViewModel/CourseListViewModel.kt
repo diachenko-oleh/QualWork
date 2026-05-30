@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
+import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
 import com.example.qualwork.Model.Relation.PatientCourseGroup
@@ -25,8 +26,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
@@ -59,59 +62,63 @@ class CourseListViewModel @Inject constructor(
                 medRepository.getAllWithSchedules(),
                 intakeLogDao.observeAll()
             ){courses, _ -> courses}.collect {
-            courseList ->
-            val result = mutableMapOf<Long, String>()
-            val resultRaw = mutableMapOf<Long, Pair<LocalTime, Boolean>>()
+                    courseList ->
+                val result = mutableMapOf<Long, String>()
+                val resultRaw = mutableMapOf<Long, Pair<LocalTime, Boolean>>()
 
-            courseList.forEach { medicationWithSchedules ->
-                medicationWithSchedules.schedules.forEach { schedule ->
+                courseList.forEach { medicationWithSchedules ->
+                    medicationWithSchedules.schedules.forEach { schedule ->
 
-                    val nextDose = calculateNextDose(schedule.id)
+                        val nextDose = calculateNextDose(schedule)
 
-                    resultRaw[schedule.id] = nextDose ?: (LocalTime.MAX to true)
-                    result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
-                        val formattedTime = time.toString().substring(0, 5)
+                        resultRaw[schedule.id] = nextDose ?: (LocalTime.MAX to true)
+                        result[schedule.id] = nextDose?.let { (time, isTomorrow) ->
+                            val formattedTime = time.toString().substring(0, 5)
 
-                        if (isTomorrow) {
-                            "$formattedTime (завтра)"
-                        } else {
-                            "$formattedTime (сьогодні)"
-                        }
-                    } ?: "—"
+                            if (isTomorrow) {
+                                "$formattedTime (завтра)"
+                            } else {
+                                "$formattedTime (сьогодні)"
+                            }
+                        } ?: "Курс завершено"
+                    }
                 }
-            }
-            nextDoseTime = result
-            nextDoseTimeRaw = resultRaw
+                nextDoseTime = result
+                nextDoseTimeRaw = resultRaw
             }
         }
     }
 
-    private suspend fun calculateNextDose(scheduleId: Long): Pair<LocalTime, Boolean>? {
-//        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
-        val times = intakeTimeDao.getBySchedule(scheduleId)
+    private suspend fun calculateNextDose(
+        schedule: Schedule
+    ): Pair<LocalTime, Boolean>?
+    {
+        val now = System.currentTimeMillis()
+        if (now < schedule.startDate) {
+            return null
+        }
+
+        if (schedule.endDate != null && now > schedule.endDate) {
+            return null
+        }
+
+        val times = intakeTimeDao.getBySchedule(schedule.id)
         if (times.isEmpty()) return null
 
         val today = LocalDate.now().toString()
-        val logsToday = intakeLogDao.getTodayLogs(scheduleId, today)
+        val logsToday = intakeLogDao.getTodayLogs(schedule.id, today)
         val nowTime = LocalTime.now()
-//        Log.d("NEXT_DOSE_DEBUG", "calculateNextDose called for scheduleId=$scheduleId")
-//
-//        Log.d("INTAKE_DEBUG", "calculateNextDose scheduleId=$scheduleId")
-//        Log.d("INTAKE_DEBUG", "  today=$today")
-//        Log.d("INTAKE_DEBUG", "  logsToday=${logsToday.map { "${it.plannedDoseTime} taken=${it.taken}" }}")
-//        Log.d("INTAKE_DEBUG", "  nowTime=$nowTime")
 
         val takenTimes = logsToday
             .filter { it.taken }
             .map { it.plannedDoseTime.toLocalTime() }
             .toSet()
 
-        Log.d("INTAKE_DEBUG", "  takenTimes=$takenTimes")
+        val sortedTimes = times
+            .map { LocalTime.parse(it.time) }
+            .sorted()
 
-        val sortedTimes = times.map { LocalTime.parse(it.time) }.sorted()
-        val nextToday = sortedTimes.firstOrNull     {!it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes}
-
-            //Log.d("INTAKE_DEBUG", "  nextToday=$nextToday, fallback=${sortedTimes.first()}")
+        val nextToday = sortedTimes.firstOrNull{!it.isBefore(nowTime.minusMinutes(1)) && it !in takenTimes}
 
         if (nextToday != null) return nextToday to false
         return sortedTimes.first() to true

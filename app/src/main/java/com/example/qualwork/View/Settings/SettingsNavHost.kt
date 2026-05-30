@@ -19,9 +19,7 @@ fun SettingsScreen() {
             startDestination = SettingsTabNavigator.Account.route,
         ){
             composable(SettingsTabNavigator.Account.route) {
-                ProfileScreen(
-                    onBackClick = { navController.popBackStack() },
-                )
+                ProfileScreen()
             }
         }
     }

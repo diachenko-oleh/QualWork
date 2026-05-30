@@ -24,12 +24,10 @@ import com.example.qualwork.Model.Relation.Converters
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun medicationDao(): MedicationDao
     abstract fun scheduleDao(): ScheduleDao
     abstract fun userDao(): UserDao
     abstract fun intakeLogDao(): IntakeLogDao
-
     abstract fun intakeTimeDao(): IntakeTimeDao
 
     companion object {

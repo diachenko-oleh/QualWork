@@ -115,6 +115,7 @@ class UserViewModel @Inject constructor(
 
             if (success) {
                 connectSuccess = true
+                loadLinks()
             } else {
                 connectError = "Код не знайдено або вже використано"
             }

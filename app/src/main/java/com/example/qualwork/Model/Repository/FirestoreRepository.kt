@@ -8,6 +8,7 @@ import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Entity.User
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.Source
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
@@ -30,23 +31,6 @@ class FirestoreRepository @Inject constructor() {
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Помилка синхронізації user: $e")
             }
-    }
-    suspend fun getUserById(userId: String): User? {
-        return try {
-            val doc = firestore.collection("users")
-                .document(userId)
-                .get()
-                .await()
-            val data = doc.data ?: return null
-            User(
-                id = data["id"] as String,
-                name = data["name"] as String,
-                code = data["code"] as String
-            )
-        } catch (e: Exception) {
-            Log.e("Firestore", "Помилка отримання user: $e")
-            null
-        }
     }
     suspend fun findUserByCode(code: String): User? {
         return try {
@@ -75,7 +59,7 @@ class FirestoreRepository @Inject constructor() {
         return try {
             val links = firestore.collection("connections")
                 .whereEqualTo("patientId", patientId)
-                .get()
+                .get(Source.SERVER)
                 .await()
 
             links.documents.mapNotNull { link ->
@@ -101,7 +85,7 @@ class FirestoreRepository @Inject constructor() {
         return try {
             val links = firestore.collection("connections")
                 .whereEqualTo("supervisorId", supervisorId)
-                .get()
+                .get(Source.SERVER)
                 .await()
 
             links.documents.mapNotNull { link ->
@@ -126,6 +110,17 @@ class FirestoreRepository @Inject constructor() {
     suspend fun connectToPatient(supervisorId: String, patientCode: String): Boolean {
         val patient = findUserByCode(patientCode) ?: return false
 
+        // перевірка чи зв'язок вже існує
+        val existing = firestore.collection("connections")
+            .whereEqualTo("supervisorId", supervisorId)
+            .whereEqualTo("patientId", patient.id)
+            .get()
+            .await()
+
+        if (!existing.isEmpty) {
+            return false
+        }
+
         return try {
             firestore.collection("connections")
                 .add(mapOf(
@@ -137,20 +132,6 @@ class FirestoreRepository @Inject constructor() {
         } catch (e: Exception) {
             Log.e("Firestore", "Помилка створення зв'язку: $e")
             false
-        }
-    }
-
-    suspend fun getPatientIds(supervisorId: String): List<String> {
-        return try {
-            val result = firestore.collection("connections")
-                .whereEqualTo("supervisorId", supervisorId)
-                .get()
-                .await()
-
-            result.documents.mapNotNull { it.getString("patientId") }
-        } catch (e: Exception) {
-            Log.e("Firestore", "Помилка отримання пацієнтів: $e")
-            emptyList()
         }
     }
 

@@ -57,7 +57,6 @@ import com.example.qualwork.ViewModel.UserViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onBackClick: () -> Unit,
     viewModel: UserViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
@@ -79,14 +78,6 @@ fun ProfileScreen(
                             textAlign = TextAlign.Justify
                         )
                     },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.Rounded.ArrowBack,
-                                contentDescription = "Назад"
-                            )
-                        }
-                    },
                     modifier = Modifier
                         .fillMaxWidth(),
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -96,7 +87,6 @@ fun ProfileScreen(
                     ),
                 )
             }
-
         ) {padding->
             val user = viewModel.currentUser
 
@@ -123,7 +113,6 @@ fun ProfileScreen(
                         .padding(8.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-
                         if (isEditingName) {
                             OutlinedTextField(
                                 value = editedName,
@@ -167,6 +156,7 @@ fun ProfileScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                //Ім'я користувача
                                 Column {
                                     Text(
                                         text = "Ім'я користувача",
@@ -192,6 +182,7 @@ fun ProfileScreen(
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
+                            //Код підключення
                             Text(
                                 text = "Код підключення",
                                 style = MaterialTheme.typography.bodyLarge,

@@ -52,6 +52,7 @@ import com.example.qualwork.View.theme.QualWorkTheme
 import com.example.qualwork.ViewModel.MedicineSearchState
 import com.example.qualwork.ViewModel.SearchViewModel
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ModalBottomSheet
@@ -154,7 +155,29 @@ fun SearchBarScreen(viewModel: SearchViewModel, openMedInfo: (searchMedication) 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 when (val state = searchState) {
-                    is MedicineSearchState.Idle -> {}
+                    is MedicineSearchState.Idle -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(100.dp),
+                                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                                )
+                                Text(
+                                    text = "Введіть назву препарату",
+                                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
                     is MedicineSearchState.Loading -> {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.CenterHorizontally)
