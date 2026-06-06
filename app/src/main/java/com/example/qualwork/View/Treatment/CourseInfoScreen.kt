@@ -73,20 +73,70 @@ fun CourseInfoScreen(
     onBackClick: () -> Unit,
     onEditClick: (Long) -> Unit,
     onIntakeClick: (Long, Long) -> Unit,
+    readOnly: Boolean = false,
     viewModel: CourseViewModel = hiltViewModel(),
     courseListViewModel: CourseListViewModel = hiltViewModel()
 ) {
     val courses by viewModel.courses.collectAsStateWithLifecycle()
-    val courseData = courses.find { it.schedules.any { s -> s.id == courseId } } ?: return
+    val patientCourseGroups = courseListViewModel.patientCourseGroups
+    LaunchedEffect(Unit) {
+        if (readOnly && courseListViewModel.patientCourseGroups.isEmpty()) {
+            courseListViewModel.loadPatientCourses()
+        }
+    }
+
+    val courseData = remember(courses, patientCourseGroups, courseId) {
+        if (readOnly) {
+            patientCourseGroups
+                .flatMap { it.courses }
+                .find { it.schedules.any { s -> s.id == courseId } }
+        } else {
+            courses.find { it.schedules.any { s -> s.id == courseId } }
+        }
+    }
+    if (courseData == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+
+
     val schedule = courseData.schedules.first()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-
-    val nextDoseTimes = courseListViewModel.nextDoseTime
+    val nextDoseTimes = if (readOnly) {
+        patientCourseGroups
+            .find { it.courses.any { c -> c.schedules.any { s -> s.id == courseId } } }
+            ?.nextDoseTimes ?: emptyMap()
+    } else {
+        courseListViewModel.nextDoseTime
+    }
     val medAmounts by viewModel.medAmounts.collectAsStateWithLifecycle()
     val medAmount = medAmounts[schedule.id]
     val shouldShowRefill = medAmount != null && medAmount <= schedule.dosage
 
+    val patientId = remember(patientCourseGroups, courseId) {
+        patientCourseGroups
+            .find { it.courses.any { c -> c.schedules.any { s -> s.id == courseId } } }
+            ?.patientId ?: ""
+    }
+
+    val calendarStats by if (readOnly && patientId.isNotEmpty()) {
+        viewModel.getPatientCalendarStats(
+            scheduleId = schedule.id,
+            patientId = patientId,
+            startDateMillis = schedule.startDate,
+            endDateMillis = schedule.endDate
+        )
+    } else {
+        viewModel.getCalendarStats(
+            scheduleId = schedule.id,
+            startDateMillis = schedule.startDate,
+            endDateMillis = schedule.endDate
+        )
+    }.collectAsState(initial = emptyList())
 
 
     LaunchedEffect(schedule.id) {
@@ -94,11 +144,6 @@ fun CourseInfoScreen(
         viewModel.loadCourse(schedule.id)
     }
     val activeIntakeTime = viewModel.activeIntakeTime
-    val calendarStats by viewModel.getCalendarStats(
-        scheduleId = schedule.id,
-        startDateMillis = schedule.startDate,
-        endDateMillis = schedule.endDate
-    ).collectAsState(initial = emptyList())
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -124,14 +169,13 @@ fun CourseInfoScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onEditClick(courseId) }) {
-                        Icon(Icons.Rounded.Edit, contentDescription = "Редагувати")
-                    }
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(
-                            Icons.Rounded.Delete,
-                            contentDescription = "Видалити"
-                        )
+                    if (!readOnly) {
+                        IconButton(onClick = { onEditClick(courseId) }) {
+                            Icon(Icons.Rounded.Edit, contentDescription = "Редагувати")
+                        }
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Rounded.Delete, contentDescription = "Видалити")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,38 +187,30 @@ fun CourseInfoScreen(
             )
         },
         floatingActionButton = {
-            activeIntakeTime?.let { time ->
-                val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        val doseTimeMillis = LocalDate.now()
-                            .atTime(time)
-                            .atZone(ZoneId.systemDefault())
-                            .toInstant()
-                            .toEpochMilli()
-                        onIntakeClick(schedule.id, doseTimeMillis)
-                    },
-                    icon = {
-                        Icon(Icons.Rounded.Medication, contentDescription = null)
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    text = { Text("Прийом за $formattedTime") }
-                )
+            if (!readOnly) {
+                activeIntakeTime?.let { time ->
+                    val formattedTime = time.format(DateTimeFormatter.ofPattern("HH:mm"))
+                    ExtendedFloatingActionButton(
+                        onClick = {
+                            val doseTimeMillis = LocalDate.now()
+                                .atTime(time)
+                                .atZone(ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                            onIntakeClick(schedule.id, doseTimeMillis)
+                        },
+                        icon = {
+                            Icon(Icons.Rounded.Medication, contentDescription = null)
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        text = { Text("Прийом за $formattedTime") }
+                    )
+                }
             }
         },
         floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
-        if (courseData == null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
         val medication = courseData.medication
         val schedule = courseData.schedules.first()
 

@@ -3,6 +3,7 @@ package com.example.qualwork.Model.Notification
 import android.content.Context
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import java.time.Duration
@@ -48,6 +49,7 @@ class NotificationScheduler @Inject constructor(
             val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .setInputData(inputData)
+                //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag(scheduleId.toString())
                 .addTag("${scheduleId}_${time}")
                 .build()

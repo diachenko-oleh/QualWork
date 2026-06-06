@@ -15,13 +15,16 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.example.qualwork.Model.DAO.ScheduleDao
 import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZonedDateTime
@@ -30,7 +33,9 @@ import java.util.concurrent.TimeUnit
 @HiltWorker
 class NotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
-    @Assisted workerParams: WorkerParameters
+    @Assisted workerParams: WorkerParameters,
+    private val scheduleDao: ScheduleDao,
+    private val lowAmountNotifier: LowAmountNotifier
 ) : CoroutineWorker(context, workerParams)
 {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -44,10 +49,10 @@ class NotificationWorker @AssistedInject constructor(
         val userId = inputData.getString("userId") ?: ""
         val userName = inputData.getString("userName") ?: ""
 
-
+        val plannedDateTime = LocalDate.now().atTime(LocalTime.parse(timeString))
         scheduleMissedCheck(
             scheduleId,
-            LocalDateTime.now().toString(),
+            plannedDateTime.toString(),
             medicationName,
             userId,
             userName
@@ -58,14 +63,20 @@ class NotificationWorker @AssistedInject constructor(
             return Result.success()
         }
 
+        val schedule = scheduleDao.getById(scheduleId)
+        val medAmount = schedule?.medAmount
+
         try {
-            showNotification(medicationName, dosage, unit, scheduleId, timeString)
+            if (medAmount != null && medAmount < dosage){
+                lowAmountNotifier.show(medicationName)
+            } else {
+                showNotification(medicationName, dosage, unit, scheduleId, timeString)
+            }
         } catch (e: SecurityException) {
             return Result.failure()
         }
 
         scheduleNextDay(timeString)
-
         return Result.success()
     }
     private fun scheduleMissedCheck(
@@ -88,6 +99,7 @@ class NotificationWorker @AssistedInject constructor(
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
             .setInitialDelay(10, TimeUnit.MINUTES) //очікування повідомленняЧерез
             .setInputData(inputData)
+            //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag("missed_$scheduleId")
             .build()
 

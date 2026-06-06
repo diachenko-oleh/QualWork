@@ -98,4 +98,19 @@ interface IntakeLogDao {
     AND taken = 1
     """)
     suspend fun isTaken(scheduleId: Long, plannedDate: String): Int
+
+    @Query("""
+    SELECT COUNT(*) FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime LIKE :plannedDateTimePrefix || '%'
+""")
+    suspend fun hasLogForTime(scheduleId: Long, plannedDateTimePrefix: String): Int
+
+    @Query("""
+    SELECT COUNT(*) FROM intake_logs 
+    WHERE scheduleId = :scheduleId 
+    AND plannedDoseTime LIKE :plannedDateTimePrefix || '%'
+    AND taken = 1
+""")
+    suspend fun isTakenAtTime(scheduleId: Long, plannedDateTimePrefix: String): Int
 }

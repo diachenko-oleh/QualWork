@@ -17,6 +17,7 @@ import com.example.qualwork.Model.Entity.MedicationForm
 import com.example.qualwork.Model.Entity.Schedule
 import com.example.qualwork.Model.Notification.NotificationScheduler
 import com.example.qualwork.Model.Relation.MedicationWithSchedules
+import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.Repository.MedicationRepository
 import com.example.qualwork.Model.Repository.UserRepository
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,6 +48,7 @@ class CourseViewModel @Inject constructor(
     private val intakeTimeDao: IntakeTimeDao,
     private val scheduleDao: ScheduleDao,
     private val notificationScheduler: NotificationScheduler,
+    private val firestoreRepository: FirestoreRepository,
     private val userPreferences: UserPreferences,
     private val userRepository: UserRepository
 
@@ -380,5 +383,46 @@ class CourseViewModel @Inject constructor(
                 .toList()
                 .chunked(7)
         }
+    }
+
+    fun getPatientCalendarStats(
+        scheduleId: Long,
+        patientId: String,
+        startDateMillis: Long,
+        endDateMillis: Long?
+    ): Flow<List<List<DayIntakeStat>>> = flow {
+        val logs = firestoreRepository.getPatientIntakeLogs(patientId)
+            .filter { it.scheduleId == scheduleId }
+
+        val stats = logs
+            .groupBy { it.plannedDoseTime.toLocalDate() }
+            .map { (date, items) ->
+                DayIntakeStat(
+                    date = date,
+                    intakes = items.map { log ->
+                        IntakeLogStat(
+                            plannedTime = log.plannedDoseTime.toLocalTime(),
+                            actualTime = log.actualDoseTime?.toLocalTime(),
+                            taken = log.taken
+                        )
+                    }.sortedBy { it.plannedTime }
+                )
+            }
+
+        val start = Instant.ofEpochMilli(startDateMillis)
+            .atZone(ZoneId.systemDefault()).toLocalDate()
+        val end = endDateMillis?.let {
+            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+        } ?: LocalDate.now()
+
+        val statsMap = stats.associateBy { it.date }
+
+        val result = generateSequence(start) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(end) }
+            .map { date -> statsMap[date] ?: DayIntakeStat(date = date, intakes = emptyList()) }
+            .toList()
+            .chunked(7)
+
+        emit(result)
     }
 }

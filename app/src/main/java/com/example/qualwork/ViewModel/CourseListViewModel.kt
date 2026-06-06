@@ -35,10 +35,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CourseListViewModel @Inject constructor(
     private val medRepository: MedicationRepository,
-    private val intakeRepository: IntakeLogRepository,
     private val intakeLogDao: IntakeLogDao,
     private val intakeTimeDao: IntakeTimeDao,
-    private val notificationScheduler: NotificationScheduler,
     private val userPreferences: UserPreferences,
     private val firestoreRepository: FirestoreRepository,
     private val userRepository: UserRepository
@@ -60,9 +58,9 @@ class CourseListViewModel @Inject constructor(
 
             combine(
                 medRepository.getAllWithSchedules(),
-                intakeLogDao.observeAll()
-            ){courses, _ -> courses}.collect {
-                    courseList ->
+                intakeLogDao.observeAll(),
+                intakeTimeDao.observeAll()
+            ){ courses, _, _ -> courses }.collect {courseList ->
                 val result = mutableMapOf<Long, String>()
                 val resultRaw = mutableMapOf<Long, Pair<LocalTime, Boolean>>()
 
@@ -74,7 +72,8 @@ class CourseListViewModel @Inject constructor(
                         result[schedule.id] = when (nextDose) {
                             is NextDoseResult.Available -> {
                                 val formattedTime = nextDose.time.toString().substring(0, 5)
-                                if (nextDose.isTomorrow) "Наступний прийом: $formattedTime (завтра)" else "Наступний прийом: $formattedTime (сьогодні)"
+                                if (nextDose.isTomorrow) "Наступний прийом: $formattedTime (завтра)"
+                                else "Наступний прийом: $formattedTime (сьогодні)"
                             }
                             is NextDoseResult.Finished -> "Курс завершено"
                             is NextDoseResult.InsufficientStock -> "Поповніть запаси"

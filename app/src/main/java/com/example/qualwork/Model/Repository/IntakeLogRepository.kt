@@ -79,11 +79,15 @@ class IntakeLogRepository @Inject constructor(
     fun getLogsForSchedule(scheduleId: Long): Flow<List<IntakeLog>> =
         intakeLogDao.getByScheduleId(scheduleId)
 
+    suspend fun hasLogForTime(scheduleId: Long, plannedDoseTime: LocalDateTime): Boolean {
+        val prefix = plannedDoseTime.toString().substring(0, 16)
+        return intakeLogDao.hasLogForTime(scheduleId, prefix) > 0
+    }
     suspend fun updateMedAmount(scheduleId: Long, amount: Int) {
         scheduleDao.updateMedAmount(scheduleId, amount)
     }
     suspend fun checkIfTaken(scheduleId: Long, plannedDoseTime: LocalDateTime): Boolean {
-        val dateString = plannedDoseTime.toLocalDate().toString()
-        return intakeLogDao.isTaken(scheduleId, dateString) > 0
+        val prefix = plannedDoseTime.toString().substring(0, 16)
+        return intakeLogDao.isTakenAtTime(scheduleId, prefix) > 0
     }
 }

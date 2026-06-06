@@ -102,21 +102,27 @@ fun RootNavHost(
 
         composable(
             route= TreatTabNavigator.TreatInfo.route,
-            arguments = listOf(navArgument("courseId") { type = NavType.LongType })
+            arguments = listOf(
+                navArgument("courseId") { type = NavType.LongType },
+                navArgument("readOnly") {
+                    type = NavType.BoolType
+                    defaultValue = false
+                }
+            )
         )
-        {backStackEntry ->
-            val courseId = backStackEntry.arguments?.getLong("courseId") ?: 0L
-            val doseTime = System.currentTimeMillis()
+        { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getLong("courseId") ?: return@composable
+            val readOnly = backStackEntry.arguments?.getBoolean("readOnly") ?: false
+
             CourseInfoScreen(
                 courseId = courseId,
+                readOnly = readOnly,
                 onBackClick = { navController.popBackStack() },
                 onEditClick = { medicationId ->
                     navController.navigate(TreatTabNavigator.NewCourse.createRoute(medicationId))
                 },
                 onIntakeClick = { scheduleId, doseTime ->
-                    navController.navigate(
-                        TreatTabNavigator.Intake.createRoute(scheduleId, doseTime)
-                    )
+                    navController.navigate(TreatTabNavigator.Intake.createRoute(scheduleId, doseTime))
                 }
             )
         }

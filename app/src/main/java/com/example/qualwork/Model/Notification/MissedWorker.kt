@@ -11,7 +11,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import com.example.qualwork.Model.Notification.NotificationWorker.Companion.CHANNEL_ID
 import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
 import com.example.qualwork.Model.UserPreferences
@@ -37,23 +39,21 @@ class MissedWorker @AssistedInject constructor(
             ?.let { LocalDateTime.parse(it) }
             ?: return Result.failure()
 
-            //Log.d("MISSED_DEBUG", "MissedWorker started: scheduleId=$scheduleId, time=$plannedDateTime")
-
         if (scheduleId == -1L) return Result.failure()
 
         val wasTaken = intakeRepository.checkIfTaken(scheduleId, plannedDateTime)
-            //Log.d("MISSED_DEBUG", "wasTaken=$wasTaken")
+        val wasLogged = intakeRepository.hasLogForTime(scheduleId, plannedDateTime)
 
-        if (!wasTaken) {
+        if (!wasTaken && !wasLogged) {
             intakeRepository.logMissedIntake(
                 scheduleId = scheduleId,
                 plannedTime = plannedDateTime.toLocalTime()
             )
-            showMissedNotification(medicationName,plannedDateTime.toLocalTime(), scheduleId)
+            showMissedNotification(medicationName, plannedDateTime.toLocalTime(), scheduleId)
 
             val userId = inputData.getString("userId") ?: return Result.success()
             val userName = inputData.getString("userName") ?: return Result.success()
-            val displayTime = String.format("%02d:%02d",plannedDateTime.hour,plannedDateTime.minute)
+            val displayTime = String.format("%02d:%02d", plannedDateTime.hour, plannedDateTime.minute)
 
             firestoreRepository.notifySupervisors(
                 patientId = userId,
@@ -62,8 +62,16 @@ class MissedWorker @AssistedInject constructor(
                 time = displayTime
             )
         }
-       return Result.success()
+        return Result.success()
     }
+    /*override suspend fun getForegroundInfo(): ForegroundInfo {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_dialog_info)
+            .setContentTitle("Нагадування про прийом")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        return ForegroundInfo(0, notification)
+    }*/
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun showMissedNotification(

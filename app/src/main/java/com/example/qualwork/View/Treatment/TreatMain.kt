@@ -78,6 +78,7 @@ import java.time.LocalTime
 fun TreatMainPage(
     onAddCourseClick: () -> Unit,
     onCourseClick: (Long) -> Unit,
+    onPatientCourseClick: (Long) -> Unit = {},
     viewModel: CourseViewModel = hiltViewModel(),
     courseListViewModel: CourseListViewModel = hiltViewModel(),
     userViewModel: UserViewModel = hiltViewModel()
@@ -205,7 +206,8 @@ fun TreatMainPage(
                             CollapsibleCourseSection(
                                 title = "Курси прийому: ${group.patientName}",
                                 courses = group.courses,
-                                nextDoseTimes = group.nextDoseTimes
+                                nextDoseTimes = group.nextDoseTimes,
+                                onCourseClick = { scheduleId -> onPatientCourseClick(scheduleId) }
                             )
                         }
                     }
@@ -296,7 +298,8 @@ fun CollapsibleCourseSection(
     title: String,
     courses: List<MedicationWithSchedules>,
     nextDoseTimes: Map<Long, String?>,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    onCourseClick: (Long) -> Unit = {}
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -378,7 +381,7 @@ fun CollapsibleCourseSection(
                                 CourseCard(
                                     medicationWithSchedules = item,
                                     nextDoseTime = scheduleId?.let { nextDoseTimes[it] },
-                                    onClick = null
+                                    onClick = scheduleId?.let { { onCourseClick(it) } }
                                 )
                             }
                         }
