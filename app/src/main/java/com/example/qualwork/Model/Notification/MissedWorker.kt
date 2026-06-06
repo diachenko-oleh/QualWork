@@ -11,15 +11,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
-import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import com.example.qualwork.Model.Notification.NotificationWorker.Companion.CHANNEL_ID
 import com.example.qualwork.Model.Repository.FirestoreRepository
 import com.example.qualwork.Model.Repository.IntakeLogRepository
-import com.example.qualwork.Model.UserPreferences
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.flow.first
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -64,14 +60,6 @@ class MissedWorker @AssistedInject constructor(
         }
         return Result.success()
     }
-    /*override suspend fun getForegroundInfo(): ForegroundInfo {
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_dialog_info)
-            .setContentTitle("Нагадування про прийом")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-        return ForegroundInfo(0, notification)
-    }*/
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun showMissedNotification(

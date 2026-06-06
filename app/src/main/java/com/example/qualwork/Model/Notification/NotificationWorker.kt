@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
@@ -79,6 +80,16 @@ class NotificationWorker @AssistedInject constructor(
         scheduleNextDay(timeString)
         return Result.success()
     }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_dialog_info)
+            .setContentTitle("Нагадування про прийом")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        return ForegroundInfo(0, notification)
+    }
+
     private fun scheduleMissedCheck(
         scheduleId: Long,
         time: String,
@@ -99,7 +110,7 @@ class NotificationWorker @AssistedInject constructor(
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
             .setInitialDelay(10, TimeUnit.MINUTES) //очікування повідомленняЧерез
             .setInputData(inputData)
-            //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag("missed_$scheduleId")
             .build()
 
