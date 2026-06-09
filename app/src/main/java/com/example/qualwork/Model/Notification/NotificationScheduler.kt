@@ -2,6 +2,7 @@ package com.example.qualwork.Model.Notification
 
 import android.content.Context
 import android.util.Log
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
@@ -49,16 +50,22 @@ class NotificationScheduler @Inject constructor(
             val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .setInputData(inputData)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag(scheduleId.toString())
                 .addTag("${scheduleId}_${time}")
                 .build()
 
-            workManager.enqueue(workRequest)
+            //workManager.enqueue(workRequest)
+            workManager.enqueueUniqueWork(
+                "notification_${scheduleId}_$time",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
         }
     }
     fun cancelNotifications(scheduleId: Long) {
         workManager.cancelAllWorkByTag(scheduleId.toString())
+        workManager.cancelAllWorkByTag("missed_$scheduleId")
     }
 
     private fun calculateInitialDelay(time: LocalTime, startDate: Long): Long {

@@ -58,7 +58,7 @@ class UserRepository(
             firestoreRepository.syncUser(user)
 
             // Medications + Schedules + IntakeTimes
-            val courses = medicationDao.getAllWithSchedulesOnce() // suspend версія
+            val courses = medicationDao.getAllWithSchedulesOnce()
             courses.forEach { course ->
                 firestoreRepository.syncMedication(course.medication, userId)
                 course.schedules.forEach { schedule ->

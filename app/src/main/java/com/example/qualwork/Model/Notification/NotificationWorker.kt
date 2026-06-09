@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
 import androidx.work.ForegroundInfo
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
@@ -25,9 +26,11 @@ import com.example.qualwork.View.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
@@ -50,7 +53,12 @@ class NotificationWorker @AssistedInject constructor(
         val userId = inputData.getString("userId") ?: ""
         val userName = inputData.getString("userName") ?: ""
 
-        val plannedDateTime = LocalDate.now().atTime(LocalTime.parse(timeString))
+        //val plannedDateTime = LocalDate.now().atTime(LocalTime.parse(timeString))
+        val plannedDateTime =
+            ZonedDateTime.now()
+                .withHour(LocalTime.parse(timeString).hour)
+                .withMinute(LocalTime.parse(timeString).minute)
+                .toLocalDateTime()
         scheduleMissedCheck(
             scheduleId,
             plannedDateTime.toString(),
@@ -60,11 +68,26 @@ class NotificationWorker @AssistedInject constructor(
         )
 
         //обробка кінця курсу
-        if (endDate != -1L && System.currentTimeMillis() > endDate) {
+//        if (endDate != -1L && System.currentTimeMillis() > endDate) {
+//            return Result.success()
+//        }
+        val today = LocalDate.now()
+        val endLocalDate = Instant.ofEpochMilli(endDate)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+
+        if (endDate != -1L && today.isAfter(endLocalDate)) {
             return Result.success()
         }
 
         val schedule = scheduleDao.getById(scheduleId)
+        if (schedule == null) {
+            Log.d(
+                "NOTIFICATION",
+                "Schedule $scheduleId deleted. Stop worker."
+            )
+            return Result.success()
+        }
         val medAmount = schedule?.medAmount
 
         try {
@@ -74,7 +97,7 @@ class NotificationWorker @AssistedInject constructor(
                 showNotification(medicationName, dosage, unit, scheduleId, timeString)
             }
         } catch (e: SecurityException) {
-            return Result.failure()
+            return Result.retry()
         }
 
         scheduleNextDay(timeString)
@@ -110,11 +133,16 @@ class NotificationWorker @AssistedInject constructor(
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
             .setInitialDelay(10, TimeUnit.MINUTES) //очікування повідомленняЧерез
             .setInputData(inputData)
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag("missed_$scheduleId")
             .build()
 
-        WorkManager.getInstance(context).enqueue(work)
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(
+                "missed_${scheduleId}_$time",
+                ExistingWorkPolicy.REPLACE,
+                work
+            )
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)

@@ -233,6 +233,7 @@ class CourseViewModel @Inject constructor(
     fun saveCourse() {
         viewModelScope.launch {
             isSaving = true
+            savedSuccessfully = false
             try {
                 val parsedTimes = intakeTimes.map { LocalTime.parse(it) }
                 val scheduleId = if (editingScheduleId == null) {

@@ -219,35 +219,32 @@ class FirestoreRepository @Inject constructor() {
             // Видалити Schedule
             firestore.collection("schedules")
                 .document("${userId}_${scheduleId}")
-                .delete()
-                .await()
+                .delete().await()
 
             // Видалити Medication
-            firestore.collection("medications")
+             firestore.collection("medications")
                 .document("${userId}_${medicationId}")
-                .delete()
-                .await()
+                .delete().await()
 
             // Видалити IntakeTimes
             val intakeTimes = firestore.collection("intake_times")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("scheduleId", scheduleId)
-                .get()
-                .await()
-            intakeTimes.documents.forEach { it.reference.delete() }
+                .get().await()
+             intakeTimes.documents.forEach { it.reference.delete().await() }
 
             // Видалити IntakeLogs
-            val intakeLogs = firestore.collection("intake_logs")
+           val intakeLogs = firestore.collection("intake_logs")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("scheduleId", scheduleId)
-                .get()
-                .await()
-            intakeLogs.documents.forEach { it.reference.delete() }
+                .get().await()
+            intakeLogs.documents.forEach { it.reference.delete().await() }
 
         } catch (e: Exception) {
             Log.e("Firestore", "Помилка видалення курсу: $e")
         }
     }
+
 
     //intake time
 
