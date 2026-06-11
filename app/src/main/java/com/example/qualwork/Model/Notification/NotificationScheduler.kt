@@ -50,12 +50,10 @@ class NotificationScheduler @Inject constructor(
             val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
                 .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .setInputData(inputData)
-                //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag(scheduleId.toString())
                 .addTag("${scheduleId}_${time}")
                 .build()
 
-            //workManager.enqueue(workRequest)
             workManager.enqueueUniqueWork(
                 "notification_${scheduleId}_$time",
                 ExistingWorkPolicy.REPLACE,

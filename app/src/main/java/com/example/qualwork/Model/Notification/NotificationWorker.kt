@@ -53,7 +53,6 @@ class NotificationWorker @AssistedInject constructor(
         val userId = inputData.getString("userId") ?: ""
         val userName = inputData.getString("userName") ?: ""
 
-        //val plannedDateTime = LocalDate.now().atTime(LocalTime.parse(timeString))
         val plannedDateTime =
             ZonedDateTime.now()
                 .withHour(LocalTime.parse(timeString).hour)
@@ -67,25 +66,12 @@ class NotificationWorker @AssistedInject constructor(
             userName
         )
 
-        //обробка кінця курсу
-//        if (endDate != -1L && System.currentTimeMillis() > endDate) {
-//            return Result.success()
-//        }
-        val today = LocalDate.now()
-        val endLocalDate = Instant.ofEpochMilli(endDate)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
-
-        if (endDate != -1L && today.isAfter(endLocalDate)) {
+        if (endDate != -1L && System.currentTimeMillis() > endDate) {
             return Result.success()
         }
 
         val schedule = scheduleDao.getById(scheduleId)
         if (schedule == null) {
-            Log.d(
-                "NOTIFICATION",
-                "Schedule $scheduleId deleted. Stop worker."
-            )
             return Result.success()
         }
         val medAmount = schedule?.medAmount
@@ -133,7 +119,6 @@ class NotificationWorker @AssistedInject constructor(
         val work = OneTimeWorkRequestBuilder<MissedWorker>()
             .setInitialDelay(10, TimeUnit.MINUTES) //очікування повідомленняЧерез
             .setInputData(inputData)
-            //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag("missed_$scheduleId")
             .build()
 
@@ -154,17 +139,14 @@ class NotificationWorker @AssistedInject constructor(
         timeString: String
     )
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Прийом ліків",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Нагадування про прийом лікарського засобу"
-            }
-            context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Прийом ліків",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Нагадування про прийом лікарського засобу"
         }
-
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
 
 
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -180,7 +162,6 @@ class NotificationWorker @AssistedInject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-            //Log.d("INTAKE_DEBUG", "Creating notification scheduleId = $scheduleId")
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_dialog_info)
             .setContentTitle("Час приймати $medicationName")
@@ -191,7 +172,6 @@ class NotificationWorker @AssistedInject constructor(
             .setContentIntent(pendingIntent)
             .build()
 
-            //Log.d("INTAKE_DEBUG", "Worker sending timeString = $timeString, scheduleId = $scheduleId")
         val notificationId = scheduleId.toInt() * 100 + timeString.hashCode()
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
