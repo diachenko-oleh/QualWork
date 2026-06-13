@@ -113,4 +113,11 @@ interface IntakeLogDao {
     AND taken = 1
 """)
     suspend fun isTakenAtTime(scheduleId: Long, plannedDateTimePrefix: String): Int
+
+    @Query("""
+    SELECT il.* FROM intake_logs il
+    INNER JOIN schedules s ON il.scheduleId = s.id
+    WHERE s.userId = :userId
+""")
+    suspend fun getByUserId(userId: String): List<IntakeLog>
 }

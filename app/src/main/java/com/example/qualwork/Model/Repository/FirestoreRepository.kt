@@ -287,7 +287,21 @@ class FirestoreRepository @Inject constructor() {
     }
 
     //intake log
+    suspend fun getSyncedIntakeLogIds(userId: String): Set<Long> {
+        return try {
+            val result = firestore.collection("intake_logs")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
 
+            result.documents.mapNotNull {
+                (it.getLong("localId"))
+            }.toSet()
+        } catch (e: Exception) {
+            Log.e("Firestore", "Помилка отримання synced IDs: $e")
+            emptySet()
+        }
+    }
     fun syncIntakeLog(intakeLog: IntakeLog, userId: String) {
         val docId = "${userId}_${intakeLog.id}"
         firestore.collection("intake_logs")
@@ -304,7 +318,6 @@ class FirestoreRepository @Inject constructor() {
                 Log.e("Firestore", "Помилка синхронізації intake_log: $e")
             }
     }
-
     suspend fun getPatientIntakeLogs(patientId: String): List<IntakeLog> {
         return try {
             val result = firestore.collection("intake_logs")

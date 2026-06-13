@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -81,6 +82,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.qualwork.Model.Entity.DayStatus
+import com.example.qualwork.Model.Entity.IntakeLogStat
 import com.example.qualwork.Model.Entity.status
 import com.example.qualwork.ViewModel.CourseListViewModel
 import com.example.qualwork.ViewModel.formatDate
@@ -499,44 +501,137 @@ fun DayStatCard(
     }
 
     if (showDialog && stat.intakes.isNotEmpty()) {
+        val takenCount = stat.intakes.count { it.taken }
+        val totalCount = stat.intakes.size
+
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = {
-                Text(
-                    text=stat.date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = stat.date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy")),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    // Підсумок прийомів
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = when {
+                            takenCount == totalCount -> com.example.qualwork.View.theme.green.copy(alpha = 0.15f)
+                            takenCount == 0 -> com.example.qualwork.View.theme.red.copy(alpha = 0.15f)
+                            else -> com.example.qualwork.View.theme.yellow.copy(alpha = 0.15f)
+                        }
+                    ) {
+                        Text(
+                            text = "Прийомів за день: $takenCount з $totalCount",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = when {
+                                takenCount == totalCount -> com.example.qualwork.View.theme.green
+                                takenCount == 0 -> com.example.qualwork.View.theme.red
+                                else -> com.example.qualwork.View.theme.yellow
+                            },
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                }
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     stat.intakes.forEach { intake ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Очікувався: ${intake.plannedTime.format(DateTimeFormatter.ofPattern("HH:mm"))}")
-
-                            intake.actualTime?.let { actual ->
-                                Text(
-                                    text = "Прийнято: ${actual.format(DateTimeFormatter.ofPattern("HH:mm"))}"
-                                )
-                            }
-
-                            Text(
-                                text = if (intake.taken) "✓" else "✗",
-                                color = if (intake.taken) com.example.qualwork.View.theme.green else com.example.qualwork.View.theme.red
-                            )
-                        }
-
+                        IntakeLogRow(intake = intake)
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Закрити")
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Закрити")
+                    }
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun IntakeLogRow(intake: IntakeLogStat) {
+    val isTaken = intake.taken
+    val accentColor = if (isTaken) com.example.qualwork.View.theme.green
+    else com.example.qualwork.View.theme.red
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = accentColor.copy(alpha = 0.08f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = accentColor.copy(alpha = 0.18f),
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = if (isTaken) "✓" else "✗",
+                        fontSize = 16.sp,
+                        color = accentColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Заплановано",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = intake.plannedTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            if (intake.actualTime != null) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Прийнято",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = intake.actualTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = accentColor
+                    )
+                }
+            } else if (!isTaken) {
+                Text(
+                    text = "Пропущено",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = accentColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 

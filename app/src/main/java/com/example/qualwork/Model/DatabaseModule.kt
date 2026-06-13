@@ -50,8 +50,9 @@ object DatabaseModule {
         userDao: UserDao,
         medicationDao: MedicationDao,
         intakeTimeDao: IntakeTimeDao,
+        intakeLogDao: IntakeLogDao,
         firestoreRepository: FirestoreRepository
-    ): UserRepository = UserRepository(userDao,medicationDao, intakeTimeDao,firestoreRepository)
+    ): UserRepository = UserRepository(userDao,medicationDao, intakeTimeDao,intakeLogDao,firestoreRepository)
     @Provides
     @Singleton
     fun provideMedicationRepository(

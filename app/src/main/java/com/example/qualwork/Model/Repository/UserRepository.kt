@@ -1,6 +1,7 @@
 package com.example.qualwork.Model.Repository
 
 import android.util.Log
+import com.example.qualwork.Model.DAO.IntakeLogDao
 import com.example.qualwork.Model.DAO.IntakeTimeDao
 import com.example.qualwork.Model.DAO.MedicationDao
 import com.example.qualwork.Model.DAO.UserDao
@@ -12,6 +13,7 @@ class UserRepository(
     private val userDao: UserDao,
     private val medicationDao: MedicationDao,
     private val intakeTimeDao: IntakeTimeDao,
+    private val intakeLogDao: IntakeLogDao,
     private val firestoreRepository: FirestoreRepository
 ) {
     suspend fun createUser(name: String): User {
@@ -56,8 +58,6 @@ class UserRepository(
         try {
             val user = userDao.getById(userId) ?: return
             firestoreRepository.syncUser(user)
-
-            // Medications + Schedules + IntakeTimes
             val courses = medicationDao.getAllWithSchedulesOnce()
             courses.forEach { course ->
                 firestoreRepository.syncMedication(course.medication, userId)
@@ -72,6 +72,15 @@ class UserRepository(
                             )
                         }
                     firestoreRepository.syncIntakeTimes(schedule.id, userId, times)
+                }
+            }
+            val syncedIds = firestoreRepository.getSyncedIntakeLogIds(userId)
+            val allLocalLogs = intakeLogDao.getByUserId(userId)
+            val unsyncedLogs = allLocalLogs.filter { it.id !in syncedIds }
+
+            if (unsyncedLogs.isNotEmpty()) {
+                unsyncedLogs.forEach { log ->
+                    firestoreRepository.syncIntakeLog(log, userId)
                 }
             }
             Log.d("Sync", "Синхронізація при запуску завершена")
