@@ -781,12 +781,6 @@ private fun StatsCardsRow(stats: CourseStats) {
             color = com.example.qualwork.View.theme.red,
             modifier = Modifier.weight(1f)
         )
-        StatCard(
-            label = "Часткові",
-            value = stats.partial.toString(),
-            color = com.example.qualwork.View.theme.yellow,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 
@@ -933,15 +927,14 @@ private fun WeeklyBarChart(
     val weeks: List<WeekBar> = remember(calendarStats) {
         calendarStats.mapIndexed { index, week ->
             val pastDays = week.filter { it.status != DayStatus.FUTURE }
-            val taken = pastDays.count { it.status == DayStatus.ALL_TAKEN }
-            val missed = pastDays.count { it.status == DayStatus.ALL_MISSED }
-            val partial = pastDays.count { it.status == DayStatus.PARTIAL }
+            val allIntakes = pastDays.flatMap { it.intakes }
+            val taken = allIntakes.count { it.taken }
+            val missed = allIntakes.count { !it.taken }
             WeekBar(
                 label = "Тиж.${index + 1}",
                 taken = taken,
                 missed = missed,
-                partial = partial,
-                total = pastDays.size.coerceAtLeast(1)
+                total = allIntakes.size.coerceAtLeast(1)
             )
         }
     }
@@ -957,9 +950,8 @@ private fun WeeklyBarChart(
     }
 
     val takenColor = com.example.qualwork.View.theme.green
-    val partialColor = com.example.qualwork.View.theme.yellow
     val missedColor = com.example.qualwork.View.theme.red
-    val maxVal = weeks.maxOf { it.taken + it.missed + it.partial }.coerceAtLeast(1).toFloat()
+    val maxVal = weeks.maxOf { it.taken + it.missed}.coerceAtLeast(1).toFloat()
 
     var animated by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { animated = true }
@@ -982,7 +974,7 @@ private fun WeeklyBarChart(
 
             var currentY = barAreaHeight
 
-            // taken
+
             val takenH = week.taken * scaleH * progress
             currentY -= takenH
             if (takenH > 0f) {
@@ -994,19 +986,6 @@ private fun WeeklyBarChart(
                 )
             }
 
-            // partial
-            val partialH = week.partial * scaleH * progress
-            currentY -= partialH
-            if (partialH > 0f) {
-                drawRoundRect(
-                    color = partialColor,
-                    topLeft = Offset(x, currentY),
-                    size = Size(barWidth, partialH),
-                    cornerRadius = CornerRadius(4.dp.toPx())
-                )
-            }
-
-            // missed
             val missedH = week.missed * scaleH * progress
             currentY -= missedH
             if (missedH > 0f) {
@@ -1036,21 +1015,22 @@ private data class WeekBar(
     val label: String,
     val taken: Int,
     val missed: Int,
-    val partial: Int,
     val total: Int
 )
 
 
 @Composable
 private fun CourseProgressBar(stats: CourseStats) {
-    val pastTotal = (stats.taken + stats.missed + stats.partial).coerceAtLeast(1)
+    val pastTotal = (stats.taken + stats.missed).coerceAtLeast(1)
     val completionPercent = stats.taken * 100 / pastTotal
-    val coursePercent = (stats.taken + stats.missed + stats.partial) * 100 / stats.totalIntakeCount.coerceAtLeast(1)
+
+    val doneIntakes = stats.taken + stats.missed
+    val coursePercent = doneIntakes * 100 / stats.totalIntakeCount.coerceAtLeast(1)
 
     var animated by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { animated = true }
     val progress by animateFloatAsState(
-        targetValue = if (animated) stats.taken.toFloat() / stats.totalIntakeCount.coerceAtLeast(1) else 0f,
+        targetValue = if (animated) pastTotal.toFloat() else 0f,
         animationSpec = tween(durationMillis = 800),
         label = "progress"
     )
@@ -1066,7 +1046,7 @@ private fun CourseProgressBar(stats: CourseStats) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "$completionPercent%",
+                text = "$coursePercent%",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = com.example.qualwork.View.theme.green
@@ -1082,7 +1062,7 @@ private fun CourseProgressBar(stats: CourseStats) {
             strokeCap = StrokeCap.Round
         )
         Text(
-            text = "Пройдено $coursePercent% курсу  •  ${stats.taken} з ${stats.totalIntakeCount} запланованих прийнято",
+            text = "Пройдено $completionPercent% курсу  •  ${stats.taken} з ${stats.totalIntakeCount} запланованих прийнято",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -1124,7 +1104,6 @@ data class CourseStats(
     val totalIntakeCount: Int,
     val taken: Int,
     val missed: Int,
-    val partial: Int,
     val future: Int,
 )
 
@@ -1161,7 +1140,6 @@ private fun computeStats(calendarStats: List<List<DayIntakeStat>>): CourseStats 
         totalIntakeCount = total,
         taken = taken,
         missed = missed,
-        partial = partial,
         future = future
     )
 }
