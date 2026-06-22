@@ -53,11 +53,11 @@ class NotificationWorker @AssistedInject constructor(
         val userId = inputData.getString("userId") ?: ""
         val userName = inputData.getString("userName") ?: ""
 
-        val plannedDateTime =
-            ZonedDateTime.now()
+        val plannedDateTime = ZonedDateTime.now()
                 .withHour(LocalTime.parse(timeString).hour)
                 .withMinute(LocalTime.parse(timeString).minute)
                 .toLocalDateTime()
+
         scheduleMissedCheck(
             scheduleId,
             plannedDateTime.toString(),

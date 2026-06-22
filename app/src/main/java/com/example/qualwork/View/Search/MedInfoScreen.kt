@@ -142,10 +142,10 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
 
                                 )
                         }
+
                         item {
                             Card(modifier = Modifier.fillMaxWidth()) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    //android.util.Log.d("MED_INFO_CHECK", "manufacturer: ${info.manufacturer}")
                                     Text(
                                         text = info.name,
                                         style = MaterialTheme.typography.titleLarge,
@@ -168,6 +168,7 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                                 }
                             }
                         }
+
                         item {
                             RecommendationBlock(
                                 pharmacies = allPharmacies,
@@ -175,6 +176,7 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                                 medicineName = state.searchMedication.name
                             )
                         }
+
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -204,6 +206,7 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                                 )
                             }
                         }
+
                         item {
                             Text(
                                 text = "Аптеки (${info.pharmacies.size})",
@@ -211,9 +214,11 @@ fun MedInfoPage(viewModel: SearchViewModel, onBack: () -> Unit, medicineUrl: Str
                             )
                             HorizontalDivider()
                         }
+
                         items(info.pharmacies) { pharmacy ->
                             PharmacyCard(pharmacy)
                         }
+
                         item{
                             Spacer(modifier = Modifier.height(4.dp))
                         }
@@ -281,7 +286,6 @@ fun RecommendationBlock(
                     )
                 }
             }
-
             if (nearest?.name != cheapest?.name) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -318,7 +322,8 @@ fun RecommendationBlock(
                         )
                     }
                 }
-            } else {
+            }
+            else {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Ця аптека є і найближчою і найвигіднішою!",

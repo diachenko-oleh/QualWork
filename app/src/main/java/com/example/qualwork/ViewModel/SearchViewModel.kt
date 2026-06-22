@@ -24,16 +24,19 @@ sealed class MedicineInfoUiState {
     data class Success(val searchMedication: searchMedication) : MedicineInfoUiState()
     data class Error(val message: String) : MedicineInfoUiState()
 }
+
 data class FilterState(
     val minPrice: Float = 0f,
     val maxPrice: Float = 0f,
     val maxPriceLimit: Float = 0f,
     val onlyAvailable: Boolean = false
 )
+
 enum class SortType {
     BY_DISTANCE,
     BY_PRICE
 }
+
 class SearchViewModel(application: Application): AndroidViewModel(application) {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
@@ -44,8 +47,6 @@ class SearchViewModel(application: Application): AndroidViewModel(application) {
 
     fun search(query: String) {
         if (query.isBlank()) return
-
-        android.util.Log.d("MedicineVM", "Пошук: $query")
 
         viewModelScope.launch {
             _searchState.value = MedicineSearchState.Loading
@@ -59,7 +60,7 @@ class SearchViewModel(application: Application): AndroidViewModel(application) {
                         .toFloatOrNull() ?: 0f
                 } ?: 9999f
 
-                // Встановлюємо фільтр з динамічним діапазоном
+                //фільтр з динамічним діапазоном
                 _filterState.value = FilterState(
                     minPrice = 0f,
                     maxPrice = maxPrice,

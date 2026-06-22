@@ -29,7 +29,7 @@ object DataScraper{
             }
         }
         return dp[a.length][b.length]
-    }   //"відстань" між двома рядками
+    }   //різниця між двома рядками
     private fun minDistance(medicineName: String, query: String): Int {
         val queryLower = query.trim().lowercase()
         val nameLower = medicineName.trim().lowercase()
@@ -96,7 +96,6 @@ object DataScraper{
             //URL аптек з координатами або по замовчуванню на Київ
             val pharmacyUrl = if (userLat != null && userLon != null) {
                 val citySlug = LocationHelper.getCitySlug(userLat, userLon)
-                //android.util.Log.d("SCRAPER", "pharmacyUrl slug: $citySlug")
                 "$cleanUrl/pharmacy/$citySlug/"
             } else {
                 "$cleanUrl/pharmacy/kyiv/"
@@ -151,7 +150,6 @@ object DataScraper{
                 .trim()
 
             val url = "https://likicontrol.com.ua/пошук-ліків/?$searchQuery"
-                android.util.Log.d("ELIKY", "url: $url")
 
             val doc = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -159,15 +157,12 @@ object DataScraper{
                 .get()
 
             val cards = doc.select("div.likiListItem")
-                android.util.Log.d("ELIKY", "Знайдено карток: ${cards.size}")
 
             val matchingCards = cards.filter  { card ->
                 val cardName = card.select("h2, h3, strong").text().uppercase()
                 android.util.Log.d("ELIKY", "cardName: $cardName")
                 cardName.contains(searchQuery.uppercase())
             }
-                android.util.Log.d("ELIKY", "matchingCards count: ${matchingCards.size}")
-
             val hasAnyDlLogo = matchingCards.any { card ->
                 val hasDl = card.select("div.dl_logo").isNotEmpty()
                 android.util.Log.d("ELIKY", "card: ${card.select("h2,h3,strong").text()} -> dl_logo: $hasDl")
@@ -182,7 +177,6 @@ object DataScraper{
                 SocialProgramStatus.NOT_AVAILABLE
             }
         } catch (e: Exception) {
-            android.util.Log.e("ELIKY", "error: ${e.message}")
             SocialProgramStatus.NOT_FOUND
         }
     }

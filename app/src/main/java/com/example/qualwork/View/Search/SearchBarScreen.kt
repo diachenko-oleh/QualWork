@@ -58,6 +58,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.example.qualwork.View.theme.lightGray
 import com.example.qualwork.ViewModel.FilterState
 
@@ -80,6 +81,7 @@ fun SearchBarScreen(viewModel: SearchViewModel, openMedInfo: (searchMedication) 
                                 .background(MaterialTheme.colorScheme.primary),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val keyboardController = LocalSoftwareKeyboardController.current
                             BasicTextField(
                                 value = query,
                                 onValueChange = { viewModel.updateQuery(it) },
@@ -100,7 +102,10 @@ fun SearchBarScreen(viewModel: SearchViewModel, openMedInfo: (searchMedication) 
                                     imeAction = ImeAction.Search
                                 ),
                                 keyboardActions = KeyboardActions(
-                                    onSearch = { viewModel.search(query) }
+                                    onSearch = {
+                                        viewModel.search(query)
+                                        keyboardController?.hide()
+                                    }
                                 ),
                                 decorationBox = { innerTextField ->
                                     Box(

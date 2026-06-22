@@ -1030,7 +1030,7 @@ private fun CourseProgressBar(stats: CourseStats) {
     var animated by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { animated = true }
     val progress by animateFloatAsState(
-        targetValue = if (animated) pastTotal.toFloat() else 0f,
+        targetValue = if (animated) doneIntakes.toFloat() / stats.totalIntakeCount.coerceAtLeast(1) else 0f,
         animationSpec = tween(durationMillis = 800),
         label = "progress"
     )
